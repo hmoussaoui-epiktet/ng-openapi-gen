@@ -6,13 +6,9 @@ import { Options } from './options';
  * Either a request body or response content
  */
 export class Content {
-  type: string;
+	type: string;
 
-  constructor(
-    public mediaType: string,
-    public spec: MediaTypeObject,
-    public options: Options,
-    public openApi: OpenAPIObject) {
-    this.type = tsType(spec.schema, options, openApi);
-  }
+	constructor(public mediaType: string, public spec: MediaTypeObject, public options: Options, public openApi: OpenAPIObject) {
+		this.type = tsType(spec.schema, options, openApi);
+	}
 }

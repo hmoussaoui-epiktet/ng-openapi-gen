@@ -3,3 +3,7 @@ node_modules
 dist
 out
 .idea
+.npmrc
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

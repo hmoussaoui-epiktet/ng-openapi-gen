@@ -17,7 +17,7 @@ export type MediaTypeObject = OpenAPIV3.MediaTypeObject | OpenAPIV3_1.MediaTypeO
 export type SecuritySchemeObject = OpenAPIV3.SecuritySchemeObject | OpenAPIV3_1.SecuritySchemeObject;
 export type SecurityRequirementObject = OpenAPIV3.SecurityRequirementObject | OpenAPIV3_1.SecurityRequirementObject;
 export type TagObject = OpenAPIV3.TagObject | OpenAPIV3_1.TagObject;
-export type ContentObject = {[media: string]: MediaTypeObject};
+export type ContentObject = { [media: string]: MediaTypeObject };
 export type ArraySchemaObject = OpenAPIV3.ArraySchemaObject | OpenAPIV3_1.ArraySchemaObject;
 export type ApiKeySecurityScheme = OpenAPIV3.ApiKeySecurityScheme | OpenAPIV3_1.ApiKeySecurityScheme;
 
@@ -28,14 +28,14 @@ export type ApiKeySecurityScheme = OpenAPIV3.ApiKeySecurityScheme | OpenAPIV3_1.
  * Type guard to check if an object is a ReferenceObject
  */
 export function isReferenceObject(obj: any): obj is ReferenceObject {
-  return obj && typeof obj === 'object' && '$ref' in obj;
+	return obj && typeof obj === 'object' && '$ref' in obj;
 }
 
 /**
  * Type guard to check if a schema is an ArraySchemaObject
  */
 export function isArraySchemaObject(obj: SchemaObject): obj is ArraySchemaObject {
-  return 'type' in obj && obj.type === 'array' && 'items' in obj;
+	return 'type' in obj && obj.type === 'array' && 'items' in obj;
 }
 
 /**
@@ -43,33 +43,33 @@ export function isArraySchemaObject(obj: SchemaObject): obj is ArraySchemaObject
  * OpenAPI 3.0 uses 'nullable: true', OpenAPI 3.1 uses 'type: [T, "null"]'
  */
 export function isNullable(schema: SchemaObject): boolean {
-  // OpenAPI 3.0 style: nullable property
-  if ('nullable' in schema && schema.nullable === true) {
-    return true;
-  }
+	// OpenAPI 3.0 style: nullable property
+	if ('nullable' in schema && schema.nullable === true) {
+		return true;
+	}
 
-  // OpenAPI 3.1 style: type array with "null"
-  if ('type' in schema && Array.isArray(schema.type)) {
-    return schema.type.includes('null' as any);
-  }
+	// OpenAPI 3.1 style: type array with "null"
+	if ('type' in schema && Array.isArray(schema.type)) {
+		return schema.type.includes('null' as any);
+	}
 
-  return false;
+	return false;
 }
 
 /**
  * Safely extracts the type from a schema object
  */
 export function getSchemaType(schema: SchemaObject): string | string[] {
-  if ('type' in schema && schema.type) {
-    if (Array.isArray(schema.type)) {
-      // OpenAPI 3.1 style - return all types for union handling
-      return schema.type;
-    }
-    return schema.type;
-  }
-  // Return undefined for schemas without explicit type
-  // This allows the caller to determine the appropriate default behavior
-  return undefined as any;
+	if ('type' in schema && schema.type) {
+		if (Array.isArray(schema.type)) {
+			// OpenAPI 3.1 style - return all types for union handling
+			return schema.type;
+		}
+		return schema.type;
+	}
+	// Return undefined for schemas without explicit type
+	// This allows the caller to determine the appropriate default behavior
+	return undefined as any;
 }
 
 // === Re-exported OpenAPI namespace types ===
