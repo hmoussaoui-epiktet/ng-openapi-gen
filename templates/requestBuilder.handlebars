@@ -147,8 +147,9 @@ class QueryParameter extends Parameter {
         return params.append(this.name, this.serializeValue(this.value, separator));
       }
     } else if (this.value !== null && typeof this.value === 'object') {
-      // Object serialization
-      if (this.options.style === 'deepObject') {
+	  if (this.value instanceof Date) {
+		params = params.append(this.name, this.value.toISOString());
+	  } else if (this.options.style === 'deepObject') { // Object serialization
         // Append a parameter for each key, in the form `name[key]`
         for (const key of Object.keys(this.value)) {
           const propVal = this.value[key];
