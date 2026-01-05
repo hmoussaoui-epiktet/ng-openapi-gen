@@ -59,7 +59,7 @@ export class OperationVariant extends GenType implements Importable {
 		this.importName = ensureNotReserved(methodName);
 		this.importFile = fileName(methodName);
 
-		this.paramsType = `${upperFirst(methodName)}$Params`;
+		this.paramsType = `${upperFirst(methodName)}Params`;
 		this.paramsImport = {
 			importName: this.paramsType,
 			importFile: this.importFile,
@@ -136,7 +136,7 @@ To access the full response (for headers, for example), \`${this.responseMethodN
 
 	private descriptionSuffix() {
 		const sends = this.requestBody ? 'sends `' + this.requestBody.mediaType + '` and ' : '';
-		const handles = this.requestBody ? `handles request body of type \`${this.requestBody.mediaType}\`` : "doesn't expect any request body";
+		const handles = this.requestBody ? `handles request body of type \`${this.requestBody.mediaType}\`` : 'doesn\'t expect any request body';
 		return `\n\nThis method ${sends}${handles}.`;
 	}
 

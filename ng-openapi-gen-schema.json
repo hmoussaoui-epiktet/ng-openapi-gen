@@ -3,9 +3,7 @@
 	"id": "https://github.com/cyclosproject/ng-openapi-gen/blob/master/ng-openapi-gen-schema.json",
 	"title": "Options for ng-openapi-gen",
 	"type": "object",
-	"required": [
-		"input"
-	],
+	"required": ["input"],
 	"properties": {
 		"$schema": {
 			"type": "string"
@@ -128,12 +126,7 @@
 		"enumStyle": {
 			"description": "Determines how root enum models will be generated. Possible values are:\n\n- `alias`: just generate an union type with all possible values. Has zero impact in generated code bundle;\n- `upper` for an enum with UPPER_CASE names;\n- `pascal` for enum PascalCase names;\n- `ignorecase` for enum names that ignore character casing; Defaults to 'alias'.",
 			"default": "alias",
-			"enum": [
-				"alias",
-				"upper",
-				"pascal",
-				"ignorecase"
-			]
+			"enum": ["alias", "upper", "pascal", "ignorecase"]
 		},
 		"enumArray": {
 			"description": "Should an array be exported for each enum model, in a file sibling to the enum definition? Defaults to `true` when `enumStyle` is `alias` (the default).",
@@ -202,12 +195,7 @@
 		"endOfLineStyle": {
 			"description": "Determines how to normalize line endings. Possible values are: `crlf`: normalize line endings to CRLF (Windows, DOS) => \\r\\n. `lf` normalize line endings to LF (Unix, OS X) => \\n. `cr` normalize line endings to CR (Mac OS) => \\r. `auto` normalize line endings for the current operating system. Defaults to 'auto'.",
 			"default": "auto",
-			"enum": [
-				"crlf",
-				"lf",
-				"cr",
-				"auto"
-			]
+			"enum": ["crlf", "lf", "cr", "auto"]
 		},
 		"templates": {
 			"description": "Custom templates directory. Any `.handlebars` files here will be used instead of the corresponding default.",
@@ -229,19 +217,12 @@
 			"minProperties": 1,
 			"patternProperties": {
 				".*": {
-					"required": [
-						"toUse"
-					],
+					"required": ["toUse"],
 					"type": "object",
 					"properties": {
 						"toUse": {
 							"type": "string",
-							"enum": [
-								"arraybuffer",
-								"blob",
-								"json",
-								"document"
-							]
+							"enum": ["arraybuffer", "blob", "json", "document"]
 						}
 					}
 				}
@@ -258,19 +239,13 @@
 					"type": "array",
 					"items": {
 						"type": "object",
-						"required": [
-							"use"
-						],
+						"required": ["use"],
 						"properties": {
 							"mediaType": {
 								"type": "string"
 							},
 							"use": {
-								"enum": [
-									"full",
-									"tail",
-									"short"
-								]
+								"enum": ["full", "tail", "short"]
 							}
 						}
 					}
@@ -287,6 +262,11 @@
 					"type": "string"
 				}
 			}
+		},
+		"generateDefaultFactories": {
+			"description": "When true, generates a factory function (modelNameDefault()) that returns an object with default values for each model. Default is false.",
+			"type": "boolean",
+			"default": true
 		}
 	}
 }

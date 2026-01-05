@@ -1,0 +1,7 @@
+export function {{defaultFactoryName}}(): {{typeName}} {
+	return {
+{{#properties}}
+		{{{identifier}}}: {{{defaultValue}}}{{^@last}},{{/@last}}
+{{/properties}}
+	};
+}

@@ -1,10 +1,10 @@
-{{{bodyMethodTsComments}}}{{methodName}}({{>operationParameters}}): {{#if @root.promises}}Promise<{{{resultType}}}>{{else}}Observable<{{{resultType}}}>{{/if}} {
-    const resp = this.{{responseMethodName}}(params, context);
-    {{#if @root.promises}}
-    return resp.then((r: {{@root.responseClass}}<{{{resultType}}}>): {{{resultType}}} => r.body);
-    {{else}}
-    return resp.pipe(
-      map((r: {{@root.responseClass}}<{{{resultType}}}>): {{{resultType}}} => r.body)
-    );
-    {{/if}}
-  }
+{{{bodyMethodTsComments}}}public {{methodName}}({{>operationParameters}}): {{#if @root.promises}}Promise<{{{resultType}}}>{{else}}Observable<{{{resultType}}}>{{/if}} {
+		{{#if @root.promises}}
+		const resp = this.{{responseMethodName}}(params, context);
+		return resp.then((r: {{@root.responseClass}}<{{{resultType}}}>): {{{resultType}}} => r.body);
+		{{else}}
+		return this.{{responseMethodName}}(params, context).pipe(
+			map((r: {{@root.responseClass}}<{{{resultType}}}>): {{{resultType}}} => r.body)
+		);
+		{{/if}}
+	}

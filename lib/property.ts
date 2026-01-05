@@ -10,6 +10,7 @@ export class Property {
 	identifier: string;
 	tsComments: string;
 	type: string;
+	defaultValue: string;
 
 	constructor(
 		public model: Model,
@@ -21,6 +22,7 @@ export class Property {
 	) {
 		// Defer type resolution until after imports are finalized
 		this.type = ''; // Will be set later
+		this.defaultValue = ''; // Will be set later
 		this.identifier = escapeId(this.name);
 		const description = (schema as SchemaObject).description || '';
 		this.tsComments = tsComments(description, 1, (schema as SchemaObject).deprecated);

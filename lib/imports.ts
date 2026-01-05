@@ -12,6 +12,7 @@ export class Import implements Importable {
 	useAlias: boolean;
 	fullPath: string;
 	typeOnly: boolean;
+	defaultFactoryName: string;
 
 	// Fields from Importable
 	importName: string;
@@ -35,6 +36,9 @@ export class Import implements Importable {
 				.split('/')
 				.filter((p) => p.length)
 				.join('/')}`;
+
+		// Generate default factory function name (camelCase version of typeName + 'Default')
+		this.defaultFactoryName = this.typeName.charAt(0).toLowerCase() + this.typeName.slice(1) + 'Default';
 
 		this.importName = name;
 		this.importPath = path;

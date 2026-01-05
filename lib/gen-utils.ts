@@ -137,11 +137,20 @@ export function ensureNotReserved(name: string): string {
  * Returns the type (class) name for a given regular name
  */
 export function typeName(name: string, options?: Options): string {
+	let result: string;
 	if (options?.camelizeModelNames === false) {
-		return upperFirst(toBasicChars(name, true));
+		result = upperFirst(toBasicChars(name, true));
 	} else {
-		return upperFirst(methodName(name));
+		result = upperFirst(methodName(name));
 	}
+
+	// Apply custom formatting: replace 'Dto' with 'DTO' (if not $Params) and remove '$'
+	if (!result.includes('$Params')) {
+		result = result.replace(/Dto(?![a-z])/g, 'DTO');
+	}
+	result = result.replace(/\$/g, '');
+
+	return result;
 }
 
 /**
@@ -221,7 +230,15 @@ export function modelClass(baseName: string, options: Options) {
  * Applies the prefix and suffix to a service class name
  */
 export function serviceClass(baseName: string, options: Options) {
-	return `${options.servicePrefix || ''}${typeName(baseName, options)}${options.serviceSuffix || 'Service'}`;
+	const base = typeName(baseName, options);
+	let suffix = options.serviceSuffix || 'Service';
+
+	// Apply custom formatting: replace 'Service' with 'ApiService' (if not $Params)
+	if (!baseName.includes('$Params') && suffix === 'Service') {
+		suffix = 'ApiService';
+	}
+
+	return `${options.servicePrefix || ''}${base}${suffix}`;
 }
 
 /**
@@ -231,7 +248,7 @@ export function escapeId(name: string) {
 	if (/^[a-zA-Z]\w*$/.test(name)) {
 		return name;
 	} else {
-		return `'${name.replace(/\'/g, "\\'")}'`;
+		return `'${name.replace(/\'/g, '\\\'')}'`;
 	}
 }
 
@@ -584,4 +601,63 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
 	}
 
 	return null;
+}
+
+/**
+ * Returns the default value for a property based on its schema
+ */
+export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, openApi: OpenAPIObject, container?: Model): string {
+	// Resolve reference
+	if (isReferenceObject(schema)) {
+		const refName = simpleName(schema.$ref);
+		// If it's a reference to another model, call its default function
+		const refTypeName = container ? container.getImportTypeName(refName) : qualifiedName(refName, options);
+		// Convert to camelCase for function name
+		const functionName = refTypeName.charAt(0).toLowerCase() + refTypeName.slice(1);
+		return `${functionName}Default()`;
+	}
+
+	const schemaObj = schema as SchemaObject;
+	const type = getSchemaType(schemaObj);
+	const nullable = isNullable(schemaObj);
+
+	// Handle nullable types
+	if (nullable) {
+		return 'null';
+	}
+
+	// Handle enums - use first value
+	if (schemaObj.enum && schemaObj.enum.length > 0) {
+		const enumType = Array.isArray(type) ? type[0] : type;
+		const firstValue = schemaObj.enum[0];
+		if (enumType === 'string') {
+			return `'${String(firstValue).replace(/'/g, '\\\'')}'`;
+		}
+		return String(firstValue);
+	}
+
+	// Handle arrays
+	if (type === 'array' || isArraySchemaObject(schemaObj)) {
+		return '[]';
+	}
+
+	// Handle different types
+	const mainType = Array.isArray(type) ? type[0] : type;
+	switch (mainType) {
+		case 'string':
+			return '\'\'';
+		case 'number':
+		case 'integer':
+			return '0';
+		case 'boolean':
+			return 'false';
+		case 'object':
+			return '{}';
+		default:
+			// For unions, anyOf, oneOf, allOf - return empty object
+			if (schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
+				return '{}';
+			}
+			return 'undefined';
+	}
 }

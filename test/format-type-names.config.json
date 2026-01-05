@@ -1,0 +1,6 @@
+{
+	"$schema": "../ng-openapi-gen-schema.json",
+	"input": "format-type-names.json",
+	"output": "out/format-type-names",
+	"ignoreUnusedModels": false
+}

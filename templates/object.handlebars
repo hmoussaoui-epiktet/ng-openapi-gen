@@ -1,9 +1,9 @@
 export interface {{typeName}} {
 {{#properties}}
-{{{tsComments}}}{{{identifier}}}{{^required}}?{{/required}}: {{{type}}};
+{{{tsComments}}}	{{{identifier}}}{{^required}}?{{/required}}: {{{type}}};
 {{/properties}}
 {{#additionalPropertiesType}}
 
-  [key: string]: {{{.}}};
+	[key: string]: {{{.}}};
 {{/additionalPropertiesType}}
 }

@@ -1,0 +1,92 @@
+{
+	"openapi": "3.0.0",
+	"info": {
+		"title": "Test service name formatting",
+		"version": "1.0"
+	},
+	"paths": {
+		"/users": {
+			"get": {
+				"tags": ["Users"],
+				"operationId": "getUsers",
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/UserDto"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/products": {
+			"get": {
+				"tags": ["Products"],
+				"operationId": "getProducts",
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/ProductDto"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/special": {
+			"get": {
+				"tags": ["Test$Params"],
+				"operationId": "getSpecial",
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "string"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"UserDto": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"ProductDto": {
+				"type": "object",
+				"properties": {
+					"sku": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+}

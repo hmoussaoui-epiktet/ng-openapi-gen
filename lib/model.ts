@@ -1,7 +1,7 @@
 import { upperCase } from 'lodash';
 import { EnumValue } from './enum-value';
 import { GenType } from './gen-type';
-import { fileName, qualifiedName, resolveRef, tsComments, tsType, unqualifiedName } from './gen-utils';
+import { defaultValueForSchema, fileName, qualifiedName, resolveRef, tsComments, tsType, unqualifiedName } from './gen-utils';
 import { OpenAPIObject, SchemaObject, getSchemaType, isNullable, isReferenceObject } from './openapi-typings';
 import { Options } from './options';
 import { Property } from './property';
@@ -31,8 +31,14 @@ export class Model extends GenType {
 	// Names of required properties without attachment to propertiy definitions
 	orphanRequiredProperties: string[];
 
+	// Default factory function name
+	defaultFactoryName: string;
+
 	constructor(public openApi: OpenAPIObject, name: string, public schema: SchemaObject, options: Options) {
 		super(name, unqualifiedName, options);
+
+		// Generate default factory function name (camelCase version of typeName)
+		this.defaultFactoryName = this.typeName.charAt(0).toLowerCase() + this.typeName.slice(1) + 'Default';
 
 		const description = schema.description || '';
 		this.tsComments = tsComments(description, 0, schema.deprecated);
@@ -85,6 +91,12 @@ export class Model extends GenType {
 			// Resolve property types
 			for (const property of this.properties) {
 				property.resolveType();
+			}
+			// Resolve default values if the option is enabled
+			if (options.generateDefaultFactories) {
+				for (const property of this.properties) {
+					property.defaultValue = defaultValueForSchema(property.schema, options, openApi, this);
+				}
 			}
 			// Finalize additional properties type
 			this.finalizeAdditionalPropertiesType();

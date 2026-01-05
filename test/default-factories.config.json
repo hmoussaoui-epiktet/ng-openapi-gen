@@ -1,0 +1,7 @@
+{
+	"$schema": "../ng-openapi-gen-schema.json",
+	"input": "default-factories.json",
+	"output": "out/default-factories",
+	"generateDefaultFactories": true,
+	"ignoreUnusedModels": false
+}

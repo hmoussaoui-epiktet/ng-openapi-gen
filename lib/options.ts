@@ -144,4 +144,7 @@ export interface Options {
 	keepFullResponseMediaType?: boolean | Array<{ mediaType?: string; use: 'full' | 'tail' | 'short' }>;
 
 	typeFormatMapping?: Record<string, string>;
+
+	/** When true, generates a factory function (modelNameDefault()) that returns an object with default values for each model. Default is false. */
+	generateDefaultFactories?: boolean;
 }
