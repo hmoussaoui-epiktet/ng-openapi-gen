@@ -1,5 +1,5 @@
 import { GenType } from './gen-type';
-import { serviceClass, tsComments } from './gen-utils';
+import { fileName, namespace, serviceClass, tsComments, typeName } from './gen-utils';
 import { TagObject } from './openapi-typings';
 import { Operation } from './operation';
 import { Options } from './options';
@@ -11,10 +11,22 @@ export class Service extends GenType {
 	constructor(tag: TagObject, public operations: Operation[], options: Options) {
 		super(tag.name, serviceClass, options);
 
-		// Angular standards demand that services have a period separating them
-		if (this.fileName.endsWith('-service')) {
-			this.fileName = this.fileName.substring(0, this.fileName.length - '-service'.length) + '.service';
+		// Generate the correct fileName without the "Api" prefix
+		// We want the class name to be "XxxApiService" but the file to be "xxx.service.ts"
+		const baseFileName = fileName(typeName(tag.name, options));
+		const ns = namespace(tag.name);
+
+		// Add .service suffix to the file name
+		const fileNameWithService = baseFileName.endsWith('-service')
+			? baseFileName.substring(0, baseFileName.length - '-service'.length) + '.service'
+			: baseFileName + '.service';
+
+		if (ns) {
+			this.fileName = ns + '/' + fileNameWithService;
+		} else {
+			this.fileName = fileNameWithService;
 		}
+
 		this.tsComments = tsComments(tag.description || '', 0);
 
 		// Collect the imports

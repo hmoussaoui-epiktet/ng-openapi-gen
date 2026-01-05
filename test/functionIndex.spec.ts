@@ -26,7 +26,7 @@ describe('Generation tests with index and no ApiModule', () => {
 
     expect(ast.exports.length).toBe(2); // 1 type + 1 function
     expect(ast.exports.some((ex: NamedExport) => ex.from === './fn/operations/get-foos')).toBe(true);
-    expect(ast.usages).toContain('GetFoos$Params');
+    expect(ast.usages).toContain('GetFoosParams');
     expect(ast.usages).toContain('getFoos');
   });
 

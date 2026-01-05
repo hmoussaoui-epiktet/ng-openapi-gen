@@ -234,8 +234,11 @@ export function serviceClass(baseName: string, options: Options) {
 	let suffix = options.serviceSuffix || 'Service';
 
 	// Apply custom formatting: replace 'Service' with 'ApiService' (if not $Params)
+	// But avoid doubling "Api" if the base already ends with "Api"
 	if (!baseName.includes('$Params') && suffix === 'Service') {
-		suffix = 'ApiService';
+		if (!base.endsWith('Api')) {
+			suffix = 'ApiService';
+		}
 	}
 
 	return `${options.servicePrefix || ''}${base}${suffix}`;
@@ -606,7 +609,7 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
 /**
  * Returns the default value for a property based on its schema
  */
-export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, openApi: OpenAPIObject, container?: Model): string {
+export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, container?: Model): string {
 	// Resolve reference
 	if (isReferenceObject(schema)) {
 		const refName = simpleName(schema.$ref);

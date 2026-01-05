@@ -23,7 +23,7 @@ export class Parameter {
 	constructor(public spec: ParameterObject, options: Options, openApi: OpenAPIObject) {
 		this.name = spec.name;
 		this.var = escapeId(this.name);
-		this.varAccess = this.var.includes("'") ? `[${this.var}]` : `.${this.var}`;
+		this.varAccess = this.var.includes('\'') ? `[${this.var}]` : `.${this.var}`;
 		this.tsComments = tsComments(spec.description || '', 0, spec.deprecated);
 		this.in = (spec.in || 'query') as ParameterLocation;
 		this.required = this.in === 'path' || spec.required || false;

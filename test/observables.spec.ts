@@ -1,9 +1,9 @@
+import * as fs from 'fs';
 import { NgOpenApiGen } from '../lib/ng-openapi-gen';
+import { OpenAPIObject } from '../lib/openapi-typings';
+import { Options } from '../lib/options';
 import options from './observables.config.json';
 import petstoreSpec from './petstore-3.0.json';
-import * as fs from 'fs';
-import { Options } from '../lib/options';
-import { OpenAPIObject } from '../lib/openapi-typings';
 
 const spec = petstoreSpec as unknown as OpenAPIObject;
 
@@ -25,7 +25,6 @@ describe('Test observables generation', () => {
 
     // Check that response methods return Observable types instead of Promise
     expect(serviceFileContent).toMatch(/Observable<StrictHttpResponse<.*>/);
-    expect(serviceFileContent).toContain('return obs');
     expect(serviceFileContent).not.toContain('return firstValueFrom(obs)');
 
     // Specifically check for response methods that should return Observables

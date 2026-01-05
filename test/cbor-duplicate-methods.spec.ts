@@ -1,9 +1,9 @@
+import * as fs from 'fs';
 import { NgOpenApiGen } from '../lib/ng-openapi-gen';
+import { OpenAPIObject } from '../lib/openapi-typings';
+import { Options } from '../lib/options';
 import options from './cbor-duplicate-methods.config.json';
 import cborSpec from './cbor-duplicate-methods.json';
-import * as fs from 'fs';
-import { Options } from '../lib/options';
-import { OpenAPIObject } from '../lib/openapi-typings';
 
 const spec = cborSpec as unknown as OpenAPIObject;
 
@@ -66,9 +66,9 @@ describe('Test CBOR duplicate methods issue', () => {
     }
 
     // Should NOT contain duplicate method declarations with the same signature
-    const methodDeclarations = serviceFileContent.match(/^\s+searchPost\(/gm);
+    const methodDeclarations = serviceFileContent.match(/^\s+(public |private )?searchPost\(/gm);
     expect(methodDeclarations?.length).toBe(1);
-    const responseMethodDeclarations = serviceFileContent.match(/^\s+searchPost\$Response\(/gm);
+    const responseMethodDeclarations = serviceFileContent.match(/^\s+(public |private )?searchPost\$Response\(/gm);
     expect(responseMethodDeclarations?.length).toBe(1);
   });
 

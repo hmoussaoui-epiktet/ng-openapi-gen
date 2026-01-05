@@ -53,7 +53,7 @@ export class Operation {
 		public options: Options,
 	) {
 		this.logger = new Logger(options.silent);
-		this.path = this.path.replace(/\'/g, "\\'");
+		this.path = this.path.replace(/\'/g, '\\\'');
 		this.tags = spec.tags || [];
 		this.pathVar = `${upperFirst(id)}Path`;
 		this.methodName = (spec as any)['x-operation-name'] || this.id;
