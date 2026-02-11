@@ -608,59 +608,38 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
 
 /**
  * Returns the default value for a property based on its schema
+ * - Objects (except Date) return {}
+ * - Everything else returns null
  */
 export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, container?: Model): string {
-	// Resolve reference
+	// Resolve reference - call its default factory function
 	if (isReferenceObject(schema)) {
 		const refName = simpleName(schema.$ref);
-		// If it's a reference to another model, call its default function
 		const refTypeName = container ? container.getImportTypeName(refName) : qualifiedName(refName, options);
-		// Convert to camelCase for function name
 		const functionName = refTypeName.charAt(0).toLowerCase() + refTypeName.slice(1);
 		return `${functionName}Default()`;
 	}
 
 	const schemaObj = schema as SchemaObject;
 	const type = getSchemaType(schemaObj);
-	const nullable = isNullable(schemaObj);
+	const format = schemaObj.format;
 
-	// Handle nullable types
-	if (nullable) {
-		return 'null';
-	}
-
-	// Handle enums - use first value
-	if (schemaObj.enum && schemaObj.enum.length > 0) {
-		const enumType = Array.isArray(type) ? type[0] : type;
-		const firstValue = schemaObj.enum[0];
-		if (enumType === 'string') {
-			return `'${String(firstValue).replace(/'/g, '\\\'')}'`;
-		}
-		return String(firstValue);
-	}
-
-	// Handle arrays
+	// Handle arrays - empty array
 	if (type === 'array' || isArraySchemaObject(schemaObj)) {
 		return '[]';
 	}
 
-	// Handle different types
-	const mainType = Array.isArray(type) ? type[0] : type;
-	switch (mainType) {
-		case 'string':
-			return '\'\'';
-		case 'number':
-		case 'integer':
-			return '0';
-		case 'boolean':
-			return 'false';
-		case 'object':
-			return '{}';
-		default:
-			// For unions, anyOf, oneOf, allOf - return empty object
-			if (schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
-				return '{}';
-			}
-			return 'undefined';
+	// Handle date/date-time as null (not objects)
+	if (format === 'date' || format === 'date-time') {
+		return 'null';
 	}
+
+	// Handle object types - empty object
+	const mainType = Array.isArray(type) ? type[0] : type;
+	if (mainType === 'object' || schemaObj.properties || schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
+		return '{}';
+	}
+
+	// Everything else returns null
+	return 'null';
 }

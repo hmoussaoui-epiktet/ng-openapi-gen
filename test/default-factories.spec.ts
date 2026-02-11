@@ -16,11 +16,11 @@ describe('Generation tests using default-factories.json', () => {
 		if (user) {
 			const ts = gen.templates.apply('model', user);
 			expect(ts).toContain('export function userDefault(): User {');
-			expect(ts).toContain('id: 0');
-			expect(ts).toContain('name: \'\'');
-			expect(ts).toContain('email: \'\'');
-			expect(ts).toContain('age: 0');
-			expect(ts).toContain('isActive: false');
+			expect(ts).toContain('id: null');
+			expect(ts).toContain('name: null');
+			expect(ts).toContain('email: null');
+			expect(ts).toContain('age: null');
+			expect(ts).toContain('isActive: null');
 			expect(ts).toContain('tags: []');
 			expect(ts).toContain('metadata: {}');
 		}
@@ -32,9 +32,9 @@ describe('Generation tests using default-factories.json', () => {
 		if (product) {
 			const ts = gen.templates.apply('model', product);
 			expect(ts).toContain('export function productDefault(): Product {');
-			expect(ts).toContain('sku: \'\'');
-			expect(ts).toContain('price: 0');
-			expect(ts).toContain('inStock: false');
+			expect(ts).toContain('sku: null');
+			expect(ts).toContain('price: null');
+			expect(ts).toContain('inStock: null');
 			expect(ts).toContain('category: categoryDefault()');
 		}
 	});
@@ -45,8 +45,8 @@ describe('Generation tests using default-factories.json', () => {
 		if (category) {
 			const ts = gen.templates.apply('model', category);
 			expect(ts).toContain('export function categoryDefault(): Category {');
-			expect(ts).toContain('id: 0');
-			expect(ts).toContain('name: \'\'');
+			expect(ts).toContain('id: null');
+			expect(ts).toContain('name: null');
 		}
 	});
 

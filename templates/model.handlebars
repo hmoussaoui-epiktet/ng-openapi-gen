@@ -8,4 +8,5 @@
 }}{{#isEnum}}{{>enum}}{{/isEnum
 }}{{#isSimple}}{{>simple}}{{/isSimple
 }}
+
 {{#if @root.options.generateDefaultFactories}}{{#isObject}}{{>defaultFactory}}{{/isObject}}{{/if}}

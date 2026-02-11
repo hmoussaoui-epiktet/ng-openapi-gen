@@ -3,5 +3,5 @@ export function {{defaultFactoryName}}(): {{typeName}} {
 {{#properties}}
 		{{{identifier}}}: {{{defaultValue}}}{{^@last}},{{/@last}}
 {{/properties}}
-	};
+	} as unknown as {{typeName}};
 }

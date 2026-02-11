@@ -1,25 +1,28 @@
 {
-  "editor.rulers": [140],
-  "editor.insertSpaces": true,
-  "editor.detectIndentation": false,
-  "editor.tabSize": 2,
-  "typescript.preferences.quoteStyle": "single",
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "typescript.tsdk": "node_modules/typescript/lib",
-  "[typescript]": {
-    "editor.formatOnSave": true
-  },
-  "[json]": {
-    "editor.formatOnSave": true
-  },
-  "[handlebars]": {
-    "editor.formatOnSave": false,
-    "editor.formatOnPaste": false,
-    "editor.suggest.insertMode": "replace",
-    "files.insertFinalNewline": false,
-  },
-  "files.insertFinalNewline": true,
-  "prettier.requireConfig": false,
-  "debug.javascript.breakOnConditionalError": false,
-  "debug.javascript.pauseForSourceMap": false
+	"editor.rulers": [
+		140
+	],
+	"editor.insertSpaces": true,
+	"editor.detectIndentation": false,
+	"editor.tabSize": 2,
+	"typescript.preferences.quoteStyle": "single",
+	"typescript.preferences.importModuleSpecifier": "relative",
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"[typescript]": {
+		"editor.formatOnSave": true
+	},
+	"[json]": {
+		"editor.formatOnSave": true
+	},
+	"[handlebars]": {
+		"editor.formatOnSave": false,
+		"editor.formatOnPaste": false,
+		"editor.defaultFormatter": null,
+		"editor.suggest.insertMode": "replace",
+		"files.insertFinalNewline": false,
+	},
+	"files.insertFinalNewline": true,
+	"prettier.requireConfig": false,
+	"debug.javascript.breakOnConditionalError": false,
+	"debug.javascript.pauseForSourceMap": false
 }
