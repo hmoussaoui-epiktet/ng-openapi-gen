@@ -95,7 +95,7 @@ export class Model extends GenType {
 			// Resolve default values if the option is enabled
 			if (options.generateDefaultFactories) {
 				for (const property of this.properties) {
-					property.defaultValue = defaultValueForSchema(property.schema, options, this);
+					property.defaultValue = defaultValueForSchema(property.schema, options, openApi, this);
 				}
 			}
 			// Finalize additional properties type

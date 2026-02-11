@@ -611,9 +611,15 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
  * - Objects (except Date) return {}
  * - Everything else returns null
  */
-export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, container?: Model): string {
-	// Resolve reference - call its default factory function
+export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, openApi: OpenAPIObject, container?: Model): string {
+	// Resolve reference
 	if (isReferenceObject(schema)) {
+		const resolved = resolveRef(openApi, schema.$ref) as SchemaObject;
+		// If the reference is an enum, return null (enums don't have factories)
+		if (resolved && resolved.enum && resolved.enum.length > 0) {
+			return 'null';
+		}
+		// Otherwise call its default factory function
 		const refName = simpleName(schema.$ref);
 		const refTypeName = container ? container.getImportTypeName(refName) : qualifiedName(refName, options);
 		const functionName = refTypeName.charAt(0).toLowerCase() + refTypeName.slice(1);
