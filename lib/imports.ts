@@ -13,6 +13,7 @@ export class Import implements Importable {
 	fullPath: string;
 	typeOnly: boolean;
 	defaultFactoryName: string;
+	hasDefaultFactory: boolean;
 
 	// Fields from Importable
 	importName: string;
@@ -39,6 +40,8 @@ export class Import implements Importable {
 
 		// Generate default factory function name (camelCase version of typeName + 'Default')
 		this.defaultFactoryName = this.typeName.charAt(0).toLowerCase() + this.typeName.slice(1) + 'Default';
+		// Will be set later when we know if the referenced model is an object
+		this.hasDefaultFactory = false;
 
 		this.importName = name;
 		this.importPath = path;

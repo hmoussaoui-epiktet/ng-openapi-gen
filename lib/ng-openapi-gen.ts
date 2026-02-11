@@ -209,6 +209,26 @@ export class NgOpenApiGen {
 			const model = new Model(this.openApi, name, resolvedSchema, this.options);
 			this.models.set(name, model);
 		}
+
+		// Update imports with hasDefaultFactory info if option is enabled
+		if (this.options.generateDefaultFactories) {
+			this.updateImportsWithFactoryInfo();
+		}
+	}
+
+	/**
+	 * Updates all model imports to indicate if the referenced model has a default factory
+	 */
+	private updateImportsWithFactoryInfo() {
+		for (const model of this.models.values()) {
+			for (const imp of model.imports) {
+				// Check if the imported model is an object (has a factory)
+				const referencedModel = this.models.get(imp.name);
+				if (referencedModel && referencedModel.isObject) {
+					imp.hasDefaultFactory = true;
+				}
+			}
+		}
 	}
 
 	private readServices() {
