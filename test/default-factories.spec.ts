@@ -16,11 +16,11 @@ describe('Generation tests using default-factories.json', () => {
 		if (user) {
 			const ts = gen.templates.apply('model', user);
 			expect(ts).toContain('export function userDefault(): User {');
-			expect(ts).toContain('id: null');
-			expect(ts).toContain('name: null');
-			expect(ts).toContain('email: null');
-			expect(ts).toContain('age: null');
-			expect(ts).toContain('isActive: null');
+			expect(ts).toContain('id: NaN');
+			expect(ts).toContain('name: \'\'');
+			expect(ts).toContain('email: \'\'');
+			expect(ts).toContain('age: NaN');
+			expect(ts).toContain('isActive: false');
 			expect(ts).toContain('tags: []');
 			expect(ts).toContain('metadata: {}');
 		}
@@ -32,9 +32,9 @@ describe('Generation tests using default-factories.json', () => {
 		if (product) {
 			const ts = gen.templates.apply('model', product);
 			expect(ts).toContain('export function productDefault(): Product {');
-			expect(ts).toContain('sku: null');
-			expect(ts).toContain('price: null');
-			expect(ts).toContain('inStock: null');
+			expect(ts).toContain('sku: \'\'');
+			expect(ts).toContain('price: NaN');
+			expect(ts).toContain('inStock: false');
 			expect(ts).toContain('category: categoryDefault()');
 		}
 	});
@@ -45,8 +45,8 @@ describe('Generation tests using default-factories.json', () => {
 		if (category) {
 			const ts = gen.templates.apply('model', category);
 			expect(ts).toContain('export function categoryDefault(): Category {');
-			expect(ts).toContain('id: null');
-			expect(ts).toContain('name: null');
+			expect(ts).toContain('id: NaN');
+			expect(ts).toContain('name: \'\'');
 		}
 	});
 
@@ -68,5 +68,17 @@ describe('Generation tests using default-factories.json', () => {
 			expect(ts).toContain('export function nullableFieldDefault(): NullableField {');
 			expect(ts).toContain('value: null');
 		}
+	});
+
+	it('defaultValue helper should be generated', () => {
+		const models = [...gen.models.values()];
+		const ts = gen.templates.apply('defaultValueHelper', { models });
+		expect(ts).toContain('export const Default = {');
+		expect(ts).toContain('get User(): User {');
+		expect(ts).toContain('return userDefault();');
+		expect(ts).toContain('get Product(): Product {');
+		expect(ts).toContain('get Category(): Category {');
+		// Enums should not be in the proxy
+		expect(ts).not.toContain('get Status()');
 	});
 });

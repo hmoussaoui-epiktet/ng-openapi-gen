@@ -21,6 +21,7 @@ export class Globals {
 	modelIndexFile?: string;
 	functionIndexFile?: string;
 	serviceIndexFile?: string;
+	defaultValueHelperFile?: string;
 	rootUrl?: string;
 	promises: boolean;
 	generateServices: boolean;
@@ -61,6 +62,9 @@ export class Globals {
 		}
 		if (options.functionIndex !== false && options.functionIndex !== '') {
 			this.functionIndexFile = options.functionIndex === true || options.functionIndex === undefined ? 'functions' : options.functionIndex;
+		}
+		if (options.generateDefaultFactories) {
+			this.defaultValueHelperFile = 'default-value';
 		}
 		this.generateServices = !!options.services;
 	}

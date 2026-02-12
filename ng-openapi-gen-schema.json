@@ -1,5 +1,5 @@
 {
-	"$schema": "https://json-schema.org/schema",
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"id": "https://github.com/cyclosproject/ng-openapi-gen/blob/master/ng-openapi-gen-schema.json",
 	"title": "Options for ng-openapi-gen",
 	"type": "object",
@@ -266,7 +266,17 @@
 		"generateDefaultFactories": {
 			"description": "When true, generates a factory function (modelNameDefault()) that returns an object with default values for each model. Default is false.",
 			"type": "boolean",
-			"default": true
+			"default": false
+		},
+		"nullValueDefaultFactories": {
+			"description": "Controls default values for primitive types in factory functions.\n- true: all primitives use null (string -> null, number -> null, boolean -> null)\n- false (default): primitives use type-specific defaults (string -> '', number -> NaN, boolean -> false)",
+			"type": "boolean",
+			"default": false
+		},
+		"strictPropertyTypes": {
+			"description": "When true, removes '?' (optional) and '| null' from property types in generated interfaces. Useful for signal-based forms. Default is false.",
+			"type": "boolean",
+			"default": false
 		}
 	}
 }

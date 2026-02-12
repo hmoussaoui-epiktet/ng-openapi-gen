@@ -256,9 +256,13 @@ export function escapeId(name: string) {
 }
 
 /**
- * Appends | null to the given type
+ * Appends | null to the given type (unless strictPropertyTypes is enabled)
  */
-function maybeAppendNull(type: string, nullable: boolean) {
+function maybeAppendNull(type: string, nullable: boolean, options?: Options) {
+	// Skip null if strictPropertyTypes is enabled
+	if (options?.strictPropertyTypes) {
+		return type;
+	}
 	if (` ${type} `.includes('null') || !nullable) {
 		// The type itself already includes null
 		return type;
@@ -437,21 +441,21 @@ export function tsType(schemaOrRef: SchemaOrRef | undefined, options: Options, o
 		const name = simpleName(schemaOrRef.$ref);
 		// When referencing the same container, use its type name
 		if (container && container.name === name) {
-			return maybeAppendNull(container.typeName, isNullable(resolved));
+			return maybeAppendNull(container.typeName, isNullable(resolved), options);
 		}
 		// Check if the container has an import alias for this reference
 		if (container && typeof (container as any).getImportTypeName === 'function') {
 			const aliasedTypeName = (container as any).getImportTypeName(name);
-			return maybeAppendNull(aliasedTypeName, isNullable(resolved));
+			return maybeAppendNull(aliasedTypeName, isNullable(resolved), options);
 		}
 		// Fallback to qualified name
-		return maybeAppendNull(qualifiedName(name, options), isNullable(resolved));
+		return maybeAppendNull(qualifiedName(name, options), isNullable(resolved), options);
 	}
 
 	// Resolve the actual type (maybe nullable)
 	const schema = schemaOrRef as SchemaObject;
 	const type = rawTsType(schema, options, openApi, container);
-	return maybeAppendNull(type, isNullable(schema));
+	return maybeAppendNull(type, isNullable(schema), options);
 }
 
 /**
@@ -608,16 +612,19 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
 
 /**
  * Returns the default value for a property based on its schema
- * - Objects (except Date) return {}
- * - Everything else returns null
  */
 export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, openApi: OpenAPIObject, container?: Model): string {
 	// Resolve reference
 	if (isReferenceObject(schema)) {
 		const resolved = resolveRef(openApi, schema.$ref) as SchemaObject;
-		// If the reference is an enum, return null (enums don't have factories)
+		// If the reference is an enum, return first enum value
 		if (resolved && resolved.enum && resolved.enum.length > 0) {
-			return 'null';
+			const enumType = getSchemaType(resolved);
+			const firstValue = resolved.enum[0];
+			if (enumType === 'string') {
+				return `'${String(firstValue).replace(/'/g, '\\\'')}'`;
+			}
+			return String(firstValue);
 		}
 		// Otherwise call its default factory function
 		const refName = simpleName(schema.$ref);
@@ -628,24 +635,53 @@ export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, op
 
 	const schemaObj = schema as SchemaObject;
 	const type = getSchemaType(schemaObj);
+
+	// Handle nullable types (unless strictPropertyTypes is enabled)
+	if (!options.strictPropertyTypes && isNullable(schemaObj)) {
+		return 'null';
+	}
+
+	// Handle enums - use first value
+	if (schemaObj.enum && schemaObj.enum.length > 0) {
+		const enumType = Array.isArray(type) ? type[0] : type;
+		const firstValue = schemaObj.enum[0];
+		if (enumType === 'string') {
+			return `'${String(firstValue).replace(/'/g, '\\\'')}'`;
+		}
+		return String(firstValue);
+	}
+
 	const format = schemaObj.format;
 
-	// Handle arrays - empty array
+	// Handle arrays
 	if (type === 'array' || isArraySchemaObject(schemaObj)) {
 		return '[]';
 	}
 
-	// Handle date/date-time as null (not objects)
+	// Handle date/date-time as null
 	if (format === 'date' || format === 'date-time') {
 		return 'null';
 	}
 
-	// Handle object types - empty object
+	// Handle different types
 	const mainType = Array.isArray(type) ? type[0] : type;
-	if (mainType === 'object' || schemaObj.properties || schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
-		return '{}';
-	}
+	const useNull = options.nullValueDefaultFactories;
 
-	// Everything else returns null
-	return 'null';
+	switch (mainType) {
+		case 'string':
+			return useNull ? 'null' : '\'\'';
+		case 'number':
+		case 'integer':
+			return useNull ? 'null' : 'NaN';
+		case 'boolean':
+			return useNull ? 'null' : 'false';
+		case 'object':
+			return '{}';
+		default:
+			// For unions, anyOf, oneOf, allOf - return empty object
+			if (schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
+				return '{}';
+			}
+			return 'null';
+	}
 }

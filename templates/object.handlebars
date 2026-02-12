@@ -1,6 +1,6 @@
 export interface {{typeName}} {
 {{#properties}}
-{{{tsComments}}}	{{{identifier}}}{{^required}}?{{/required}}: {{{type}}};
+{{{tsComments}}}	{{{identifier}}}{{#unless @root.options.strictPropertyTypes}}{{^required}}?{{/required}}{{/unless}}: {{{type}}};
 {{/properties}}
 {{#additionalPropertiesType}}
 

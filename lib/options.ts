@@ -147,4 +147,14 @@ export interface Options {
 
 	/** When true, generates a factory function (modelNameDefault()) that returns an object with default values for each model. Default is false. */
 	generateDefaultFactories?: boolean;
+
+	/**
+	 * When true, primitive types use null as default value instead of type-specific defaults.
+	 * - true: string -> null, number -> null, boolean -> null
+	 * - false (default): string -> '', number -> NaN, boolean -> false
+	 */
+	nullValueDefaultFactories?: boolean;
+
+	/** When true, removes '?' (optional) and '| null' from property types in generated interfaces. Useful for signal-based forms. Default is false. */
+	strictPropertyTypes?: boolean;
 }
