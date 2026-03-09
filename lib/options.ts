@@ -157,4 +157,45 @@ export interface Options {
 
 	/** When true, removes '?' (optional) and '| null' from property types in generated interfaces. Useful for signal-based forms. Default is false. */
 	strictPropertyTypes?: boolean;
+
+	/** Configuration for validation schema generation. */
+	validation?: ValidationConfig;
+}
+
+/** Custom import for a validator */
+export interface ValidatorCustomImport {
+	/** The validator function name */
+	name: string;
+	/** The import path for this validator */
+	path: string;
+}
+
+/** Mapping entry for OpenAPI constraint to Signal Form validator */
+export interface ValidatorMappingEntry {
+	/** The validator function name to import */
+	validator: string;
+	/** Template for generating the validator call. Supports placeholders: {{path}}, {{value}}, {{property}}, {{type}} */
+	template: string;
+}
+
+/** Configuration for validation schema generation */
+export interface ValidationConfig {
+	/** When true, generates Angular Signal Form validation functions for each model. Default is false. */
+	enabled?: boolean;
+	/** Output directory for validation files. Defaults to 'validation'. */
+	outputDir?: string;
+	/** Default import path for native validators. Defaults to '@angular/forms/signals'. */
+	importPath?: string;
+	/** Additional imports for custom validators. */
+	customImports?: ValidatorCustomImport[];
+	/** Dictionary mapping OpenAPI constraints to Signal Form validators. */
+	mapping?: Record<string, ValidatorMappingEntry>;
+	/** List of mapping keys to disable. */
+	disabled?: string[];
+	/** When true, only generates validation for models ending with 'InputDTO'. Default is false. */
+	generateForInputDTOOnly?: boolean;
+	/** Prefix for generated validation functions. Defaults to 'apply'. */
+	functionPrefix?: string;
+	/** Suffix for generated validation functions. Defaults to 'Validation'. */
+	functionSuffix?: string;
 }

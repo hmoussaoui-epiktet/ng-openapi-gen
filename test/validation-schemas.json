@@ -1,0 +1,115 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Validation Schemas Test API",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/candidates": {
+			"post": {
+				"operationId": "createCandidate",
+				"tags": ["Candidates"],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CandidatInputDTO"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"CandidatInputDTO": {
+				"type": "object",
+				"required": ["coordonnees", "status"],
+				"properties": {
+					"coordonnees": {
+						"$ref": "#/components/schemas/CandidatCoordonneesInputDTO"
+					},
+					"status": {
+						"type": "string",
+						"maxLength": 50
+					},
+					"notes": {
+						"type": "string",
+						"maxLength": 1000,
+						"nullable": true
+					}
+				}
+			},
+			"CandidatCoordonneesInputDTO": {
+				"type": "object",
+				"required": ["nomNaissance", "prenom", "eMail", "telephone"],
+				"properties": {
+					"civilite": {
+						"type": "integer"
+					},
+					"nomNaissance": {
+						"type": "string",
+						"maxLength": 30
+					},
+					"nomUsage": {
+						"type": "string",
+						"maxLength": 30,
+						"nullable": true
+					},
+					"prenom": {
+						"type": "string",
+						"maxLength": 30
+					},
+					"eMail": {
+						"type": "string",
+						"maxLength": 100,
+						"format": "email"
+					},
+					"telephone": {
+						"type": "string",
+						"maxLength": 20,
+						"pattern": "^(?:(?:\\+|00)33|0)\\s*[1-9](?:[\\s.-]*\\d{2}){4}$"
+					},
+					"dateNaissance": {
+						"type": "string",
+						"format": "date"
+					}
+				}
+			},
+			"UserWithConstraints": {
+				"type": "object",
+				"required": ["username", "age"],
+				"properties": {
+					"username": {
+						"type": "string",
+						"minLength": 3,
+						"maxLength": 50
+					},
+					"age": {
+						"type": "integer",
+						"minimum": 18,
+						"maximum": 120
+					},
+					"website": {
+						"type": "string",
+						"pattern": "^https?://.*"
+					}
+				}
+			},
+			"SimpleEnum": {
+				"type": "string",
+				"enum": ["active", "inactive", "pending"]
+			},
+			"EmptyObject": {
+				"type": "object",
+				"properties": {}
+			}
+		}
+	}
+}

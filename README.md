@@ -1,128 +1,102 @@
-ng-openapi-gen: An OpenAPI 3.0 and 3.1 code generator for Angular
----
+## ng-openapi-gen : Un générateur de code OpenAPI 3.0 et 3.1 pour Angular
 
-![Build status](https://github.com/cyclosproject/ng-openapi-gen/workflows/build/badge.svg)
+![Statut du build](https://github.com/cyclosproject/ng-openapi-gen/workflows/build/badge.svg)
 
-This project is a NPM module that generates model interfaces and web service clients from an [OpenApi 3.0 or 3.1](https://www.openapis.org/)
-[specification](https://github.com/OAI/OpenAPI-Specification). The generated classes follow the principles of [Angular](https://angular.io/).
-The generated code is compatible with Angular 16+. Support for OpenAPI 3.1 was added since ng-openapi-gen 1.0.
+Ce projet est un module NPM qui génère des interfaces de modèles et des clients de services web à partir d'une [spécification](https://github.com/OAI/OpenAPI-Specification) [OpenApi 3.0 ou 3.1](https://www.openapis.org/). Les classes générées suivent les principes d'[Angular](https://angular.io/). Le code généré est compatible avec Angular 16+. Le support d'OpenAPI 3.1 a été ajouté depuis ng-openapi-gen 1.0.
 
-For a generator for [Swagger / OpenAPI 2.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md), use the
-[ng-swagger-gen](https://github.com/cyclosproject/ng-swagger-gen) instead. Note that ng-swagger-gen has been unmaintained for quite a long time.
+Pour un générateur [Swagger / OpenAPI 2.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md), utilisez plutôt [ng-swagger-gen](https://github.com/cyclosproject/ng-swagger-gen). Notez que ng-swagger-gen n'est plus maintenu depuis un certain temps.
 
-## Highlights
+## Points forts
 
-- Easy to use and to integrate with Angular CLI;
-- Supports OpenAPI 3.0 and 3.1 specifications in both `JSON` and `YAML` formats;
-- Each OpenAPI path is mapped to a function. Those functions are invoked using a generated `@Injectable` service;
-  - Alternatively, it is possible to generate an `@Injectable` service per tag. This has a bit cleaner API at expense of extra bundle size;
-- Supports both `Promise` (default) and `Observable` as result types for services;
-- Allows accessing the original `HttpResponse`, for example, to read headers;
-  - This is achieved by generating a variant suffixed with `$Response` on services;
-- `OpenAPI` supports combinations of request body and response content types. For each combination, a distinct function is generated;
-- It is possible to specify a subset of functions / models to generate.
-  - Think of this not for saving on bundle size, as tree-shaking includes only used functions / models, but to have a cleaner library;
-- It is possible to specify a custom root URL for the web service endpoints;
-- Generated files should compile using strict TypeScript compiler flags, such as `noUnusedLocals` and `noUnusedParameters`.
+- Facile à utiliser et à intégrer avec Angular CLI ;
+- Supporte les spécifications OpenAPI 3.0 et 3.1 aux formats `JSON` et `YAML` ;
+- Chaque chemin OpenAPI est mappé vers une fonction. Ces fonctions sont invoquées via un service `@Injectable` généré ;
+    - Alternativement, il est possible de générer un service `@Injectable` par tag. Cela offre une API un peu plus propre au prix d'une taille de bundle plus importante ;
+- Supporte à la fois `Promise` (par défaut) et `Observable` comme types de retour pour les services ;
+- Permet d'accéder à la `HttpResponse` originale, par exemple pour lire les en-têtes ;
+    - Ceci est réalisé en générant une variante suffixée par `$Response` sur les services ;
+- `OpenAPI` supporte les combinaisons de types de contenu pour le corps de requête et la réponse. Pour chaque combinaison, une fonction distincte est générée ;
+- Il est possible de spécifier un sous-ensemble de fonctions / modèles à générer.
+    - Ne pensez pas à cela pour réduire la taille du bundle, car le tree-shaking n'inclut que les fonctions / modèles utilisés, mais pour avoir une bibliothèque plus propre ;
+- Il est possible de spécifier une URL racine personnalisée pour les endpoints des services web ;
+- Les fichiers générés doivent compiler avec les flags stricts du compilateur TypeScript, tels que `noUnusedLocals` et `noUnusedParameters`.
 
 ## Limitations
 
-- Only standard OpenAPI 3.0 / 3.1 descriptions will be generated;
-  - However, ng-openapi-gen supports a few [vendor extensions](#supported-vendor-extensions);
-- Servers per operation are not supported;
-- Only the first server is used as a default root URL in the configuration;
-- No data transformation is ever performed before sending / after returning data;
-  - This means that a property of type `string` and format `date-time` will always be generated as `string`, not `Date`.
-    Otherwise every API call would need to have a processing that would traverse the returned object graph before sending the request
-    to replace all date properties by `Date`. The same applies to sent requests. Such operations are out of scope for `ng-openapi-gen`;
+- Seules les descriptions standard OpenAPI 3.0 / 3.1 seront générées ;
+    - Cependant, ng-openapi-gen supporte quelques [extensions vendeur](#extensions-vendeur-supportées) ;
+- Les serveurs par opération ne sont pas supportés ;
+- Seul le premier serveur est utilisé comme URL racine par défaut dans la configuration ;
+- Aucune transformation de données n'est effectuée avant l'envoi / après la réception des données ;
+    - Cela signifie qu'une propriété de type `string` et format `date-time` sera toujours générée comme `string`, pas comme `Date`. Sinon, chaque appel API devrait avoir un traitement qui parcourrait le graphe d'objets retourné avant d'envoyer la requête pour remplacer toutes les propriétés date par `Date`. Il en va de même pour les requêtes envoyées. De telles opérations sont hors du périmètre de `ng-openapi-gen` ;
 
-## Migrating from previous versions to 1.0+
+## Migration des versions précédentes vers 1.0+
 
-Starting with version 1.0, ng-openapi-gen has updated some default configuration options to better align with current standards. These are
-the settings that have changed:
+À partir de la version 1.0, ng-openapi-gen a mis à jour certaines options de configuration par défaut pour mieux s'aligner sur les standards actuels. Voici les paramètres qui ont changé :
 
-- `"module": false`: Previously, the default was `ApiModule`. `NgModule`s are no longer needed since standalone components were introduced
-  in Angular 14. All generated `@Injectable` classes are provided in root module, so we don't need another one.
-- `"services": false`: Previously, the default was `true`. For some time already, ng-openapi-gen has generated functions for each API
-  operation, and services (one per API tag) are just wrappers around those functions. As services reference all functions, for larger APIs,
-  the bundle size is impacted, because the code for handling all functions in the tag will be bundled, even when using a single one.
-- `"apiService": "Api"`. Previously empty, the `Api` service was not generated, because the default was to use a service per tag. But
-  now we need it to invoke the generated API functions.
-- `"enumStyle": "alias"`. Previously, the default was `pascal`. With this change, by default we'll no longer generate TypeScript `enum`.
-  Instead, a type is defined with an union of possible values. All other options end up generating a TypeScript `enum`, which emit a
-  JavaScript class, taking up space in the bundle size.
-- `"enumArray": true`. The major drawback of `enumStyle: alias` is there's no way to iterate all existing values. With `enumArray` we
-  generate a sibling `.ts` file which exports an array (of the correct enum type) with all items on it.
-- `"promises": true`: By default, generated services return `Promise`s, not `Observable`s. If you prefer to keep working with `Observable`s,
-  set `"promises": false`.
+- `"module": false` : Auparavant, la valeur par défaut était `ApiModule`. Les `NgModule`s ne sont plus nécessaires depuis l'introduction des composants standalone dans Angular 14. Toutes les classes `@Injectable` générées sont fournies dans le module racine, donc nous n'en avons plus besoin.
+- `"services": false` : Auparavant, la valeur par défaut était `true`. Depuis un certain temps déjà, ng-openapi-gen génère des fonctions pour chaque opération API, et les services (un par tag API) ne sont que des wrappers autour de ces fonctions. Comme les services référencent toutes les fonctions, pour les grandes API, la taille du bundle est impactée, car le code pour gérer toutes les fonctions du tag sera inclus, même si vous n'en utilisez qu'une seule.
+- `"apiService": "Api"` : Auparavant vide, le service `Api` n'était pas généré, car la valeur par défaut était d'utiliser un service par tag. Mais maintenant nous en avons besoin pour invoquer les fonctions API générées.
+- `"enumStyle": "alias"` : Auparavant, la valeur par défaut était `pascal`. Avec ce changement, par défaut nous ne générons plus de TypeScript `enum`. À la place, un type est défini avec une union des valeurs possibles. Toutes les autres options finissent par générer un TypeScript `enum`, qui émet une classe JavaScript, occupant de l'espace dans la taille du bundle.
+- `"enumArray": true` : L'inconvénient majeur de `enumStyle: alias` est qu'il n'y a pas de moyen d'itérer toutes les valeurs existantes. Avec `enumArray` nous générons un fichier `.ts` adjacent qui exporte un tableau (du bon type enum) avec tous les éléments.
+- `"promises": true` : Par défaut, les services générés retournent des `Promise`s, pas des `Observable`s. Si vous préférez continuer à travailler avec des `Observable`s, définissez `"promises": false`.
 
-So, if you're upgrading from previous versions and want the generation to be similar, set all these settings in your configuration with
-their corresponding previous values.
+Donc, si vous mettez à niveau depuis des versions précédentes et souhaitez que la génération soit similaire, définissez tous ces paramètres dans votre configuration avec leurs valeurs par défaut précédentes correspondantes.
 
-## Installing and running
+## Installation et exécution
 
-You may want to install `ng-openapi-gen` globally or just on your project. Here is an example for a global setup:
+Vous pouvez installer `ng-openapi-gen` globalement ou juste sur votre projet. Voici un exemple pour une installation globale :
 
 ```bash
 $ npm install -g ng-openapi-gen
 $ ng-openapi-gen --input my-api.yaml --output my-app/src/app/api
 ```
 
-Alternatively you can use the generator directly from within your build-script:
+Alternativement, vous pouvez utiliser le générateur directement depuis votre script de build :
 
 ```typescript
 import $RefParser from 'json-schema-ref-parser';
 import { NgOpenApiGen } from 'ng-openapi-gen';
 
 const options = {
-  input: "my-api.json",
-  output: "my-app/src/app/api",
-}
+	input: 'my-api.json',
+	output: 'my-app/src/app/api',
+};
 
-// load the openapi-spec and resolve all $refs
+// charger la spec openapi et résoudre toutes les $refs
 const RefParser = new $RefParser();
 const openApi = await RefParser.bundle(options.input, {
-  dereference: { circular: false }
+	dereference: { circular: false },
 });
 
 const ngOpenGen = new NgOpenApiGen(openApi, options);
 ngOpenGen.generate();
 ```
 
-This will expect the file `my-api.yaml` (or `my-api.json`) to be in the current directory, and will generate files on `my-app/src/app/api`.
+Cela s'attendra à ce que le fichier `my-api.yaml` (ou `my-api.json`) soit dans le répertoire courant, et générera les fichiers dans `my-app/src/app/api`.
 
-## Configuration file and CLI arguments
+## Fichier de configuration et arguments CLI
 
-If the file `ng-openapi-gen.json` exists in the current directory, it will be read. Alternatively, you can run
-`ng-openapi-gen --config my-config.json` (could also be `-c`) to specify a different configuration file, or even specify the input / output
-as `ng-openapi-gen -i input.yaml` or `ng-openapi-gen -i input.yaml -o /tmp/generation`. The only required configuration property is `input`,
-which specified the `OpenAPI` specification file. The default `output` is `src/app/api`.
+Si le fichier `ng-openapi-gen.json` existe dans le répertoire courant, il sera lu. Alternativement, vous pouvez exécuter `ng-openapi-gen --config my-config.json` (ou `-c`) pour spécifier un fichier de configuration différent, ou même spécifier l'entrée / sortie comme `ng-openapi-gen -i input.yaml` ou `ng-openapi-gen -i input.yaml -o /tmp/generation`. La seule propriété de configuration requise est `input`, qui spécifie le fichier de spécification `OpenAPI`. La valeur par défaut de `output` est `src/app/api`.
 
-You can even generate code for multiple APIs in a single project, each with its own configuration file. In this case you'll also probably
-want to customize names, like having a different `configuration` and `apiService` for each API.
+Vous pouvez même générer du code pour plusieurs APIs dans un seul projet, chacune avec son propre fichier de configuration. Dans ce cas, vous voudrez probablement aussi personnaliser les noms, comme avoir une `configuration` et un `apiService` différents pour chaque API.
 
-For a list with all possible configuration options, see the
-[JSON schema file](https://raw.githubusercontent.com/cyclosproject/ng-openapi-gen/master/ng-openapi-gen-schema.json).
-You can also run `ng-openapi-gen --help` to see all available options.
-Each option in the JSON schema can be passed in as a CLI argument, both in camel case, like `--includeTags tag1,tag2,tag3`, or in kebab
-case, like `--exclude-tags tag1,tag2,tag3`.
+Pour une liste de toutes les options de configuration possibles, consultez le [fichier JSON schema](https://raw.githubusercontent.com/cyclosproject/ng-openapi-gen/master/ng-openapi-gen-schema.json). Vous pouvez aussi exécuter `ng-openapi-gen --help` pour voir toutes les options disponibles. Chaque option du JSON schema peut être passée comme argument CLI, en camelCase comme `--includeTags tag1,tag2,tag3`, ou en kebab-case comme `--exclude-tags tag1,tag2,tag3`.
 
-Here is an example of a configuration file:
+Voici un exemple de fichier de configuration :
 
 ```json
 {
-  "$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
-  "input": "my-file.json",
-  "output": "my-app/src/app/api",
-  "ignoreUnusedModels": false
+	"$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+	"input": "my-file.json",
+	"output": "my-app/src/app/api",
+	"ignoreUnusedModels": false
 }
 ```
 
-## Using functional API calls
+## Utilisation des appels API fonctionnels
 
-`ng-openapi-gen` generates a function with the implementation of each actual API call. By default since version 1.0, services per API tag
-are not generated. To use these functions, a generated @Injectable `Api` is provided. This name can be changed with the `apiService`
-configuration. Here is an example:
+`ng-openapi-gen` génère une fonction avec l'implémentation de chaque appel API réel. Par défaut depuis la version 1.0, les services par tag API ne sont pas générés. Pour utiliser ces fonctions, un service `@Injectable` `Api` est fourni. Ce nom peut être changé avec la configuration `apiService`. Voici un exemple :
 
 ```typescript
 import { Component, inject, OnInit, signal } from '@angular/core';
@@ -132,26 +106,23 @@ import { getResults } from './api/fn/operations/get-results';
 import { Result } from './api/models';
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+	selector: 'app-root',
+	imports: [RouterOutlet],
+	templateUrl: './app.html',
+	styleUrl: './app.css',
 })
 export class App implements OnInit {
-  protected readonly results = signal<Result[] | null>(null);
+	protected readonly results = signal<Result[] | null>(null);
 
-  private api = inject(Api);
+	private api = inject(Api);
 
-  async ngOnInit() {
-    this.results.set(await this.api.invoke(getResults, { limit: 5 }));
-  }
+	async ngOnInit() {
+		this.results.set(await this.api.invoke(getResults, { limit: 5 }));
+	}
 }
 ```
 
-Alternatively, ng-openapi-gen can be configured to generate services for each API tag. This was the default before version 1.0. Services
-provide a slightly cleaner API, at expense of additional bundle size. For larger APIs, suppose your tag has 50 operations and you inject
-the service in a component, with functions, only the corresponding function will be bundled together with the component code. However, if
-it injects a service, all 50 functions will be bundled. You can set the `"services": true` configuration option, and use it like this:
+Alternativement, ng-openapi-gen peut être configuré pour générer des services pour chaque tag API. C'était le comportement par défaut avant la version 1.0. Les services fournissent une API légèrement plus propre, au prix d'une taille de bundle supplémentaire. Pour les grandes API, supposons que votre tag a 50 opérations et que vous injectez le service dans un composant, avec les fonctions, seule la fonction correspondante sera incluse avec le code du composant. Cependant, si vous injectez un service, les 50 fonctions seront incluses. Vous pouvez définir l'option de configuration `"services": true`, et l'utiliser ainsi :
 
 ```typescript
 import { Component, inject, OnInit, signal } from '@angular/core';
@@ -160,29 +131,27 @@ import { Result } from './api/models';
 import { ResultsService } from './api/services';
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+	selector: 'app-root',
+	imports: [RouterOutlet],
+	templateUrl: './app.html',
+	styleUrl: './app.css',
 })
 export class App implements OnInit {
-  protected readonly results = signal<Result[] | null>(null);
+	protected readonly results = signal<Result[] | null>(null);
 
-  private resultsService = inject(ResultsService);
+	private resultsService = inject(ResultsService);
 
-  async ngOnInit() {
-    this.results.set(await this.resultsService.getResults({ limit: 5 }));
-  }
+	async ngOnInit() {
+		this.results.set(await this.resultsService.getResults({ limit: 5 }));
+	}
 }
 ```
 
-Notice there are minimal cosmetic improvements, at expense of extra bundle sizes, especially for large APIs.
+Notez qu'il y a des améliorations cosmétiques minimales, au prix de tailles de bundle supplémentaires, surtout pour les grandes API.
 
-## Specifying the root URL / web service endpoint
+## Spécifier l'URL racine / endpoint du service web
 
-By default, the server specified in the OpenAPI specification is used as root URL for API paths. However, it is a common requirement to
-configure this from the application. The easiest way is to inject the `ApiConfiguration` instance (note it can be renamed with the
-`configuration` setting) in your bootstrap component and set it directly:
+Par défaut, le serveur spécifié dans la spécification OpenAPI est utilisé comme URL racine pour les chemins API. Cependant, c'est une exigence courante de configurer cela depuis l'application. Le moyen le plus simple est d'injecter l'instance `ApiConfiguration` (notez qu'elle peut être renommée avec le paramètre `configuration`) dans votre composant bootstrap et de la définir directement :
 
 ```typescript
 import { Component, inject, OnInit, signal } from '@angular/core';
@@ -191,41 +160,38 @@ import { ApiConfiguration } from './api/api-configuration';
 import { Result } from './api/models';
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+	selector: 'app-root',
+	imports: [RouterOutlet],
+	templateUrl: './app.html',
+	styleUrl: './app.css',
 })
 export class App implements OnInit {
-  protected readonly results = signal<Result[] | null>(null);
+	protected readonly results = signal<Result[] | null>(null);
 
-  private apiConfiguration = inject(ApiConfiguration);
+	private apiConfiguration = inject(ApiConfiguration);
 
-  async ngOnInit() {
-    this.apiConfiguration.rootUrl = 'http://localhost:3000';
-  }
+	async ngOnInit() {
+		this.apiConfiguration.rootUrl = 'http://localhost:3000';
+	}
 }
 ```
 
-Alternatively, if you generate an `NgModule` by setting the `module` configuration (which isn't recommended since Angular's standalone
-components, and is disabled in ng-openapi-gen by default), you can use its `.forRoot({ rootUrl: 'https://www.my-server.com/api'})` method
-when importing the module. However, this is only kept for historical reasons, and might be removed in the future.
+Alternativement, si vous générez un `NgModule` en définissant la configuration `module` (ce qui n'est pas recommandé depuis les composants standalone d'Angular, et est désactivé par défaut dans ng-openapi-gen), vous pouvez utiliser sa méthode `.forRoot({ rootUrl: 'https://www.my-server.com/api'})` lors de l'import du module. Cependant, ceci est conservé uniquement pour des raisons historiques, et pourrait être supprimé à l'avenir.
 
-## Passing request headers / customizing the request
+## Passer des en-têtes de requête / personnaliser la requête
 
-To pass request headers, such as authorization or API keys, as well as having a centralized error handling, a standard
-[interceptor](https://angular.dev/guide/http/interceptors) should be used. Here is an example of a functional interceptor:
+Pour passer des en-têtes de requête, comme l'autorisation ou les clés API, ainsi que pour avoir une gestion centralisée des erreurs, un [intercepteur](https://angular.dev/guide/http/interceptors) standard devrait être utilisé. Voici un exemple d'intercepteur fonctionnel :
 
 ```typescript
 import { HttpInterceptorFn } from '@angular/common/http';
 
 export const API_INTERCEPTOR: HttpInterceptorFn = (req, next) => {
-  console.log('Intercepted request:', req);
-  return next(req);
+	console.log('Requête interceptée:', req);
+	return next(req);
 };
 ```
 
-Then, use it in your `app.config.ts`:
+Ensuite, utilisez-le dans votre `app.config.ts` :
 
 ```typescript
 import { ApplicationConfig } from '@angular/core';
@@ -233,102 +199,91 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { API_INTERCEPTOR } from './api-interceptor';
 
 export const appConfig: ApplicationConfig = {
-  providers: [
-    // ... others
-    provideHttpClient(withInterceptors([API_INTERCEPTOR])),
-  ],
+	providers: [
+		// ... autres
+		provideHttpClient(withInterceptors([API_INTERCEPTOR])),
+	],
 };
 ```
 
-## Setting up a node script
+## Configurer un script node
 
-It is not a good practice to have generated code committed to the source control system (such as git). The only exception, is for projects
-using a third party API definition that never changes, in which ng-openapi-gen is expected to run only once. To ignore the generator output
-folder to in GIT, assuming the default output folder `src/app/api`, create the `src/app/.gitignore` file, with a line being `api`.
+Ce n'est pas une bonne pratique d'avoir du code généré commité dans le système de contrôle de version (comme git). La seule exception est pour les projets utilisant une définition d'API tierce qui ne change jamais, auquel cas ng-openapi-gen est censé être exécuté une seule fois. Pour ignorer le dossier de sortie du générateur dans GIT, en supposant le dossier de sortie par défaut `src/app/api`, créez le fichier `src/app/.gitignore`, avec une ligne contenant `api`.
 
-If you use an API definition that can change, setup an NPM script to ensure that whenever your project is started or built, the generated
-files are consistent with the API definition. To do so, create the `ng-openapi-gen.json` configuration file and add the following
-`scripts` to your `package.json`:
+Si vous utilisez une définition d'API qui peut changer, configurez un script NPM pour vous assurer que chaque fois que votre projet est démarré ou construit, les fichiers générés sont cohérents avec la définition de l'API. Pour ce faire, créez le fichier de configuration `ng-openapi-gen.json` et ajoutez les `scripts` suivants à votre `package.json` :
 
 ```json
 {
-  "scripts": {
-    "generate:api": "ng-openapi-gen",
-    "start": "npm run generate:api && npm run ng -- serve",
-    "build": "npm run generate:api && npm run ng -- build -prod"
-  }
+	"scripts": {
+		"generate:api": "ng-openapi-gen",
+		"start": "npm run generate:api && npm run ng -- serve",
+		"build": "npm run generate:api && npm run ng -- build -prod"
+	}
 }
 ```
 
-This way whenever you run `npm start` or `npm run build`, the API classes will be re-generated.
+De cette façon, chaque fois que vous exécutez `npm start` ou `npm run build`, les classes API seront re-générées.
 
-Also, if you use several configuration files, you can specify multiple times the call to `ng-openapi-gen`, like:
+Aussi, si vous utilisez plusieurs fichiers de configuration, vous pouvez spécifier plusieurs fois l'appel à `ng-openapi-gen`, comme :
+
 ```json
 {
-  "scripts": {
-    "generate:api": "npm run generate:api:a && npm run generate:api:b",
-    "generate.api:a": "ng-openapi-gen -c api-a.json",
-    "generate.api:b": "ng-openapi-gen -c api-b.json",
-    "start": "npm run generate:api && npm run ng -- serve",
-    "build": "npm run generate:api && npm run ng -- build -prod"
-  }
+	"scripts": {
+		"generate:api": "npm run generate:api:a && npm run generate:api:b",
+		"generate.api:a": "ng-openapi-gen -c api-a.json",
+		"generate.api:b": "ng-openapi-gen -c api-b.json",
+		"start": "npm run generate:api && npm run ng -- serve",
+		"build": "npm run generate:api && npm run ng -- build -prod"
+	}
 }
 ```
 
-## Supported vendor extensions
+## Extensions vendeur supportées
 
-Besides the OpenAPI 3 specification, the following vendor extensions are supported:
+En plus de la spécification OpenAPI 3, les extensions vendeur suivantes sont supportées :
 
-- `x-operation-name`: Defined in [LoopBack](https://loopback.io/doc/en/lb4/Decorators_openapi.html), this extension can be used in
-  operations to specify the actual method name. The `operationId` is required to be unique among all tags, but with this extension,
-  a shorter method name can be used per tag (service). Example:
+- `x-operation-name` : Définie dans [LoopBack](https://loopback.io/doc/en/lb4/Decorators_openapi.html), cette extension peut être utilisée dans les opérations pour spécifier le nom réel de la méthode. L'`operationId` doit être unique parmi tous les tags, mais avec cette extension, un nom de méthode plus court peut être utilisé par tag (service). Exemple :
 
 ```yaml
 paths:
-  /users:
-    get:
-      tags:
-        - Users
-      operationId: listUsers
-      x-operation-name: list
-      # ...
-  /places:
-    get:
-      tags:
-        - Places
-      operationId: listPlaces
-      x-operation-name: list
-      # ...
+    /users:
+        get:
+            tags:
+                - Users
+            operationId: listUsers
+            x-operation-name: list
+            # ...
+    /places:
+        get:
+            tags:
+                - Places
+            operationId: listPlaces
+            x-operation-name: list
+            # ...
 ```
 
-- `x-enumNames`: Generated by [NSwag](https://github.com/RicoSuter/NSwag), this extension allows schemas which are enumerations to customize
-  the enum names. It must be an array with the same length as the actual enum values. Example:
+- `x-enumNames` : Générée par [NSwag](https://github.com/RicoSuter/NSwag), cette extension permet aux schémas qui sont des énumérations de personnaliser les noms des enum. Ce doit être un tableau de la même longueur que les valeurs réelles de l'enum. Exemple :
 
 ```yaml
 components:
-  schemas:
-    HttpStatusCode:
-      type: integer
-      enum:
-        - 200
-        - 404
-        - 500
-      x-enumNames:
-        - OK
-        - NOT_FOUND
-        - INTERNAL_SERVER_ERROR
+    schemas:
+        HttpStatusCode:
+            type: integer
+            enum:
+                - 200
+                - 404
+                - 500
+            x-enumNames:
+                - OK
+                - NOT_FOUND
+                - INTERNAL_SERVER_ERROR
 ```
 
-## Customizing templates
+## Personnalisation des templates
 
-You can customize the Handlebars templates by copying the desired files from the
-[templates](https://github.com/cyclosproject/ng-openapi-gen/tree/master/templates) folder (only the ones you need to customize) to some
-folder in your project, and then reference it in the configuration file.
+Vous pouvez personnaliser les templates Handlebars en copiant les fichiers désirés du dossier [templates](https://github.com/cyclosproject/ng-openapi-gen/tree/master/templates) (seulement ceux que vous devez personnaliser) vers un dossier de votre projet, puis en le référençant dans le fichier de configuration.
 
-For example, to make objects extend a base interface, copy the
-[object.handlebars](https://github.com/cyclosproject/ng-openapi-gen/tree/master/templates) file to your `src/templates` folder. Then, in
-`ng-openapi-gen.json` file, set the following: `"templates": "src/templates"`. Finally, the customized `src/templates/object.handlebars`
-would look like the following (based on the 1.0 version, subject to change in the future):
+Par exemple, pour faire que les objets étendent une interface de base, copiez le fichier [object.handlebars](https://github.com/cyclosproject/ng-openapi-gen/tree/master/templates) vers votre dossier `src/templates`. Ensuite, dans le fichier `ng-openapi-gen.json`, définissez : `"templates": "src/templates"`. Enfin, le `src/templates/object.handlebars` personnalisé ressemblerait à ceci (basé sur la version 1.0, sujet à changement à l'avenir) :
 
 ```handlebars
 import { MyBaseModel} from 'src/app/my-base-model';
@@ -344,29 +299,287 @@ export interface {{typeName}} extends MyBaseModel {
 }
 ```
 
-## Custom Handlebars helpers
+## Helpers Handlebars personnalisés
 
-You can integrate your own Handlebar helpers for custom templates. To do so simply provide a `handlebars.js` file in the same directory as
-your templates that exports a function that receives the Handlebars instance that will be used when generating the code from your templates.
+Vous pouvez intégrer vos propres helpers Handlebars pour des templates personnalisés. Pour ce faire, fournissez simplement un fichier `handlebars.js` dans le même répertoire que vos templates qui exporte une fonction recevant l'instance Handlebars qui sera utilisée lors de la génération du code à partir de vos templates.
 
 ```js
-module.exports = function(handlebars) {
-  // Adding a custom handlebars helper: loud
-  handlebars.registerHelper('loud', function (aString) {
-    return aString.toUpperCase()
-  });
+module.exports = function (handlebars) {
+	// Ajout d'un helper handlebars personnalisé : loud
+	handlebars.registerHelper('loud', function (aString) {
+		return aString.toUpperCase();
+	});
 };
 ```
 
-## Developing and contributing
+## Génération des schémas de validation (Angular Signal Forms)
 
-The generator itself is written in TypeScript. When building, the code is transpiled to JavaScript in the `dist` folder. And the `dist`
-folder is the one that gets published to NPM. Even to prevent publishing from the wrong path, the `package.json` file has `"private": true`,
-which gets replaced by `false` in the build process.
+ng-openapi-gen peut générer automatiquement des fonctions de validation pour Angular Signal Forms à partir des contraintes définies dans votre spécification OpenAPI.
 
-The tests, on the other hand, run on vitest and run directly from TypeScript.
+### Configuration de base
 
-After developing the changes, to `link` the module and test it with other node projects, run the following:
+Pour activer la génération des validations, ajoutez la section `validation` dans votre configuration :
+
+```json
+{
+	"$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+	"input": "my-api.yaml",
+	"output": "src/app/api",
+	"validation": {
+		"enabled": true
+	}
+}
+```
+
+Les fichiers de validation seront générés dans le dossier `validation/` (configurable via `outputDir`).
+
+### Exemple d'utilisation
+
+Supposons que vous ayez un modèle OpenAPI défini ainsi :
+
+```yaml
+components:
+    schemas:
+        UserInputDTO:
+            type: object
+            required:
+                - email
+                - name
+            properties:
+                email:
+                    type: string
+                    format: email
+                name:
+                    type: string
+                    minLength: 2
+                    maxLength: 100
+                age:
+                    type: integer
+                    minimum: 0
+                    maximum: 150
+                website:
+                    type: string
+                    pattern: '^https?://.*'
+```
+
+ng-openapi-gen générera une fonction de validation :
+
+```typescript
+import { email, maxLength, min, max, minLength, pattern, required } from '@angular/forms/signals';
+import { SignalFormGroup } from '@angular/forms/signals';
+import { UserInputDTO } from '../models/user-input-dto';
+
+export function applyUserInputDTOValidation(form: SignalFormGroup<UserInputDTO>): void {
+	const p = form.controls;
+	required(p.email);
+	email(p.email);
+	required(p.name);
+	minLength(p.name, 2);
+	maxLength(p.name, 100);
+	min(p.age, 0);
+	max(p.age, 150);
+	pattern(p.website, new RegExp('^https?://.*'));
+}
+```
+
+Utilisez cette fonction avec vos formulaires Angular Signal Forms :
+
+```typescript
+import { Component, inject } from '@angular/core';
+import { SignalFormBuilder } from '@angular/forms/signals';
+import { applyUserInputDTOValidation } from './api/validation/apply-user-input-dto-validation';
+import { UserInputDTO } from './api/models';
+
+@Component({
+	selector: 'app-user-form',
+	templateUrl: './user-form.html',
+})
+export class UserFormComponent {
+	private fb = inject(SignalFormBuilder);
+
+	form = this.fb.group<UserInputDTO>({
+		email: '',
+		name: '',
+		age: null,
+		website: '',
+	});
+
+	constructor() {
+		applyUserInputDTOValidation(this.form);
+	}
+}
+```
+
+### Mapping des contraintes OpenAPI vers les validateurs
+
+Par défaut, ng-openapi-gen mappe les contraintes OpenAPI suivantes :
+
+| Contrainte OpenAPI                    | Validateur Angular | Template généré                              |
+| ------------------------------------- | ------------------ | -------------------------------------------- |
+| `required` (dans le tableau required) | `required`         | `required({{path}})`                         |
+| `minLength`                           | `minLength`        | `minLength({{path}}, {{value}})`             |
+| `maxLength`                           | `maxLength`        | `maxLength({{path}}, {{value}})`             |
+| `minimum`                             | `min`              | `min({{path}}, {{value}})`                   |
+| `maximum`                             | `max`              | `max({{path}}, {{value}})`                   |
+| `pattern`                             | `pattern`          | `pattern({{path}}, new RegExp('{{value}}'))` |
+| `format: email`                       | `email`            | `email({{path}})`                            |
+
+### Personnalisation du mapping
+
+Vous pouvez surcharger ou étendre le mapping par défaut :
+
+```json
+{
+	"validation": {
+		"enabled": true,
+		"mapping": {
+			"format:date": {
+				"validator": "dateValidator",
+				"template": "dateValidator({{path}})"
+			},
+			"format:phone": {
+				"validator": "phoneValidator",
+				"template": "phoneValidator({{path}})"
+			}
+		}
+	}
+}
+```
+
+### Ajout de validateurs personnalisés
+
+Pour utiliser des validateurs personnalisés qui ne proviennent pas de `@angular/forms/signals`, utilisez `customImports` :
+
+```json
+{
+	"validation": {
+		"enabled": true,
+		"importPath": "@angular/forms/signals",
+		"customImports": [
+			{ "name": "dateValidator", "path": "@app/validators" },
+			{ "name": "phoneValidator", "path": "@app/validators" }
+		],
+		"mapping": {
+			"format:date": {
+				"validator": "dateValidator",
+				"template": "dateValidator({{path}})"
+			}
+		}
+	}
+}
+```
+
+Cela générera les imports suivants :
+
+```typescript
+import { required, minLength, maxLength } from '@angular/forms/signals';
+import { dateValidator, phoneValidator } from '@app/validators';
+```
+
+### Désactivation de certains validateurs
+
+Pour désactiver certains validateurs par défaut, utilisez l'option `disabled` :
+
+```json
+{
+	"validation": {
+		"enabled": true,
+		"disabled": ["format:email", "pattern"]
+	}
+}
+```
+
+### Génération pour les modèles InputDTO uniquement
+
+Si vous souhaitez générer les validations uniquement pour les modèles de type "input" (par exemple, ceux se terminant par `InputDTO`), activez l'option `generateForInputDTOOnly` :
+
+```json
+{
+	"validation": {
+		"enabled": true,
+		"generateForInputDTOOnly": true
+	}
+}
+```
+
+### Configuration complète
+
+Voici un exemple de configuration complète :
+
+```json
+{
+	"$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+	"input": "api.yaml",
+	"output": "src/app/api",
+	"validation": {
+		"enabled": true,
+		"outputDir": "validation",
+		"importPath": "@angular/forms/signals",
+		"functionPrefix": "apply",
+		"functionSuffix": "Validation",
+		"generateForInputDTOOnly": false,
+		"customImports": [
+			{ "name": "dateValidator", "path": "@app/validators" },
+			{ "name": "ibanValidator", "path": "@app/validators/iban" }
+		],
+		"mapping": {
+			"format:date": {
+				"validator": "dateValidator",
+				"template": "dateValidator({{path}})"
+			},
+			"format:iban": {
+				"validator": "ibanValidator",
+				"template": "ibanValidator({{path}})"
+			}
+		},
+		"disabled": []
+	}
+}
+```
+
+### Support des objets imbriqués
+
+ng-openapi-gen génère automatiquement des appels récursifs pour les propriétés qui référencent d'autres modèles. Par exemple :
+
+```yaml
+components:
+    schemas:
+        OrderInputDTO:
+            type: object
+            required:
+                - customer
+            properties:
+                customer:
+                    $ref: '#/components/schemas/CustomerInputDTO'
+        CustomerInputDTO:
+            type: object
+            required:
+                - email
+            properties:
+                email:
+                    type: string
+                    format: email
+```
+
+Générera :
+
+```typescript
+// apply-order-input-dto-validation.ts
+import { applyCustomerInputDTOValidation } from './apply-customer-input-dto-validation';
+
+export function applyOrderInputDTOValidation(form: SignalFormGroup<OrderInputDTO>): void {
+	const p = form.controls;
+	applyCustomerInputDTOValidation(p.customer as unknown as SignalFormGroup<CustomerInputDTO>);
+}
+```
+
+## Développement et contribution
+
+Le générateur lui-même est écrit en TypeScript. Lors du build, le code est transpilé en JavaScript dans le dossier `dist`. Et le dossier `dist` est celui qui est publié sur NPM. Même pour empêcher la publication depuis le mauvais chemin, le fichier `package.json` a `"private": true`, qui est remplacé par `false` dans le processus de build.
+
+Les tests, quant à eux, s'exécutent sur vitest et s'exécutent directement depuis TypeScript.
+
+Après avoir développé les modifications, pour `link` le module et le tester avec d'autres projets node, exécutez ce qui suit :
 
 ```bash
 npm run build
@@ -374,4 +587,4 @@ cd dist
 npm link
 ```
 
-At that point, the globally available ng-openapi-gen will be the one compiled to the `dist` folder.
+À ce stade, le ng-openapi-gen disponible globalement sera celui compilé dans le dossier `dist`.

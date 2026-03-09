@@ -17,6 +17,7 @@ import { Operation } from './operation';
 import { Options } from './options';
 import { Service } from './service';
 import { Templates } from './templates';
+import { ValidationGenerator } from './validation-generator';
 
 /**
  * Main generator class
@@ -28,6 +29,7 @@ export class NgOpenApiGen {
 	models = new Map<string, Model>();
 	services = new Map<string, Service>();
 	operations = new Map<string, Operation>();
+	validationGenerator?: ValidationGenerator;
 	outDir: string;
 	logger: Logger;
 	tempDir: string;
@@ -140,6 +142,23 @@ export class NgOpenApiGen {
 			}
 			if (this.globals.defaultValueHelperFile) {
 				this.write('defaultValueHelper', general, this.globals.defaultValueHelperFile);
+			}
+
+			// Generate validation schemas if enabled
+			if (this.options.validation?.enabled) {
+				this.validationGenerator = new ValidationGenerator(this.openApi, this.options, this.models);
+				const validationModels = this.validationGenerator.getValidationModelsArray();
+				const validationDir = this.options.validation.outputDir ?? 'validation';
+
+				// Generate each validation file
+				for (const validationModel of validationModels) {
+					this.write('validation', validationModel, validationModel.validationFileName, validationDir);
+				}
+
+				// Generate validation index
+				if (validationModels.length > 0 && this.globals.validationIndexFile) {
+					this.write('validationIndex', { validationModels, validationDir }, this.globals.validationIndexFile);
+				}
 			}
 
 			// Now synchronize the temp to the output folder

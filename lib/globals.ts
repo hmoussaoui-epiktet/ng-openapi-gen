@@ -22,6 +22,7 @@ export class Globals {
 	functionIndexFile?: string;
 	serviceIndexFile?: string;
 	defaultValueHelperFile?: string;
+	validationIndexFile?: string;
 	rootUrl?: string;
 	promises: boolean;
 	generateServices: boolean;
@@ -65,6 +66,9 @@ export class Globals {
 		}
 		if (options.generateDefaultFactories) {
 			this.defaultValueHelperFile = 'default-value';
+		}
+		if (options.validation?.enabled) {
+			this.validationIndexFile = 'validation-schemas';
 		}
 		this.generateServices = !!options.services;
 	}

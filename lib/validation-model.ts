@@ -1,0 +1,357 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+import { fileName } from './gen-utils';
+import { Model } from './model';
+import { OpenAPIObject, ReferenceObject, SchemaObject, isNullable, isReferenceObject } from './openapi-typings';
+import { Options, ValidationConfig, ValidatorMappingEntry } from './options';
+import { Property } from './property';
+
+/**
+ * Escapes a string for use inside new RegExp('...')
+ * Escapes backslashes and single quotes
+ */
+function escapeRegExpString(str: string): string {
+	return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+}
+
+/** Default mapping from OpenAPI constraints to Signal Form validators */
+export const DEFAULT_VALIDATION_MAPPING: Record<string, ValidatorMappingEntry> = {
+	required: { validator: 'required', template: 'required({{path}})' },
+	minLength: { validator: 'minLength', template: 'minLength({{path}}, {{value}})' },
+	maxLength: { validator: 'maxLength', template: 'maxLength({{path}}, {{value}})' },
+	minimum: { validator: 'min', template: 'min({{path}}, {{value}})' },
+	maximum: { validator: 'max', template: 'max({{path}}, {{value}})' },
+	pattern: { validator: 'pattern', template: 'pattern({{path}}, new RegExp(\'{{value}}\'))' },
+	'format:email': { validator: 'email', template: 'email({{path}})' },
+};
+
+/** Represents a single validation call to be generated */
+export interface ValidationCall {
+	/** The validator function name */
+	validator: string;
+	/** The generated code for this validation call */
+	code: string;
+}
+
+/** Represents validation info for a single property */
+export interface PropertyValidation {
+	/** Property name */
+	name: string;
+	/** Property identifier (escaped for JS) */
+	identifier: string;
+	/** List of validation calls for this property */
+	validations: ValidationCall[];
+}
+
+/** Represents a nested object reference for validation */
+export interface NestedValidation {
+	/** Property identifier */
+	identifier: string;
+	/** The validation function name to call */
+	functionName: string;
+	/** Import path for the validation function */
+	importPath: string;
+	/** Import file name */
+	importFile: string;
+}
+
+/**
+ * Validation model containing all validation info for a model
+ */
+export class ValidationModel {
+	/** The generated function name for this model's validation */
+	functionName: string;
+	/** File name for the validation file */
+	validationFileName: string;
+	/** The model type name */
+	typeName: string;
+	/** Import path for the model type */
+	modelImportPath: string;
+	/** Properties with validation rules */
+	propertyValidations: PropertyValidation[];
+	/** Nested object validations (for recursive calls) */
+	nestedValidations: NestedValidation[];
+	/** All validators used in this model (for imports) */
+	usedValidators: Set<string>;
+	/** Whether this model has any validations */
+	hasValidations: boolean;
+	/** Path to root from this model's directory */
+	pathToRoot: string;
+	/** Default import path for validators */
+	importPath: string;
+	/** Native validator imports (from importPath) */
+	nativeValidatorImports: string[];
+	/** Custom validator imports */
+	customValidatorImports: { name: string; path: string }[];
+
+	constructor(
+		public model: Model,
+		public openApi: OpenAPIObject,
+		public options: Options,
+		private allModels: Map<string, Model>,
+		private modelsWithValidation: Set<string>,
+	) {
+		const config = this.getConfig();
+		const prefix = config.functionPrefix ?? 'apply';
+		const suffix = config.functionSuffix ?? 'Validation';
+
+		this.typeName = model.typeName;
+		this.functionName = `${prefix}${model.typeName}${suffix}`;
+		this.validationFileName = fileName(model.typeName) + '.validation';
+		// Import path to model: from validation/ to models/
+		this.modelImportPath = '../models/' + fileName(model.typeName);
+		this.pathToRoot = model.pathToRoot;
+		this.importPath = config.importPath ?? '@angular/forms/signals';
+
+		this.usedValidators = new Set<string>();
+		this.propertyValidations = [];
+		this.nativeValidatorImports = [];
+		this.customValidatorImports = [];
+		this.nestedValidations = [];
+
+		if (model.isObject && model.properties) {
+			this.collectValidations();
+		}
+
+		// Build import lists after collecting validations
+		this.buildImportLists();
+
+		this.hasValidations = this.propertyValidations.length > 0 || this.nestedValidations.length > 0;
+	}
+
+	/**
+	 * Build the native and custom import lists based on used validators
+	 */
+	private buildImportLists(): void {
+		const config = this.getConfig();
+		const customImports = config.customImports ?? [];
+		const customValidatorNames = new Set(customImports.map((i) => i.name));
+
+		for (const validator of this.usedValidators) {
+			if (customValidatorNames.has(validator)) {
+				const customImport = customImports.find((i) => i.name === validator)!;
+				this.customValidatorImports.push(customImport);
+			} else {
+				this.nativeValidatorImports.push(validator);
+			}
+		}
+
+		// Sort for consistent output
+		this.nativeValidatorImports.sort();
+		this.customValidatorImports.sort((a, b) => a.name.localeCompare(b.name));
+	}
+
+	private getConfig(): ValidationConfig {
+		return this.options.validation ?? {};
+	}
+
+	private getMapping(): Record<string, ValidatorMappingEntry> {
+		const config = this.getConfig();
+		const baseMapping = { ...DEFAULT_VALIDATION_MAPPING, ...(config.mapping ?? {}) };
+		const disabled = config.disabled ?? [];
+
+		// Remove disabled mappings
+		for (const key of disabled) {
+			delete baseMapping[key];
+		}
+
+		return baseMapping;
+	}
+
+	private collectValidations(): void {
+		const schema = this.model.schema;
+		const requiredProps = schema.required ?? [];
+		const mapping = this.getMapping();
+
+		for (const property of this.model.properties) {
+			const propValidations = this.collectPropertyValidations(property, requiredProps, mapping);
+			if (propValidations.validations.length > 0) {
+				this.propertyValidations.push(propValidations);
+			}
+
+			// Check for nested object reference
+			this.checkNestedValidation(property);
+		}
+	}
+
+	private collectPropertyValidations(
+		property: Property,
+		requiredProps: string[],
+		mapping: Record<string, ValidatorMappingEntry>,
+	): PropertyValidation {
+		const validations: ValidationCall[] = [];
+		const schema = this.resolvePropertySchema(property.schema);
+
+		// Required validation
+		if (requiredProps.includes(property.name) && !isNullable(schema) && mapping['required']) {
+			const call = this.generateValidationCall(mapping['required'], property, undefined);
+			if (call) validations.push(call);
+		}
+
+		// String validations
+		if (schema.minLength !== undefined && mapping['minLength']) {
+			const call = this.generateValidationCall(mapping['minLength'], property, schema.minLength);
+			if (call) validations.push(call);
+		}
+
+		if (schema.maxLength !== undefined && mapping['maxLength']) {
+			const call = this.generateValidationCall(mapping['maxLength'], property, schema.maxLength);
+			if (call) validations.push(call);
+		}
+
+		if (schema.pattern !== undefined && mapping['pattern']) {
+			const call = this.generateValidationCall(mapping['pattern'], property, schema.pattern);
+			if (call) validations.push(call);
+		}
+
+		// Number validations
+		if (schema.minimum !== undefined && mapping['minimum']) {
+			const call = this.generateValidationCall(mapping['minimum'], property, schema.minimum);
+			if (call) validations.push(call);
+		}
+
+		if (schema.maximum !== undefined && mapping['maximum']) {
+			const call = this.generateValidationCall(mapping['maximum'], property, schema.maximum);
+			if (call) validations.push(call);
+		}
+
+		// Format validations
+		if (schema.format) {
+			const formatKey = `format:${schema.format}`;
+			if (mapping[formatKey]) {
+				const call = this.generateValidationCall(mapping[formatKey], property, schema.format);
+				if (call) validations.push(call);
+			}
+		}
+
+		// Extension validations (x-*)
+		for (const key of Object.keys(schema)) {
+			if (key.startsWith('x-') && mapping[key]) {
+				const call = this.generateValidationCall(mapping[key], property, (schema as any)[key]);
+				if (call) validations.push(call);
+			}
+		}
+
+		return {
+			name: property.name,
+			identifier: property.identifier,
+			validations,
+		};
+	}
+
+	private resolvePropertySchema(schema: SchemaObject | ReferenceObject): SchemaObject {
+		if (isReferenceObject(schema)) {
+			const refPath = schema.$ref;
+			const refName = refPath.split('/').pop()!;
+			const refSchema = (this.openApi.components?.schemas?.[refName] ?? {}) as SchemaObject;
+			return refSchema;
+		}
+		return schema;
+	}
+
+	private generateValidationCall(
+		mappingEntry: ValidatorMappingEntry,
+		property: Property,
+		value: any,
+	): ValidationCall | null {
+		this.usedValidators.add(mappingEntry.validator);
+
+		let code = mappingEntry.template;
+		code = code.replace(/\{\{path\}\}/g, `p.${property.identifier}`);
+		code = code.replace(/\{\{property\}\}/g, property.name);
+		code = code.replace(/\{\{type\}\}/g, property.type);
+
+		if (value !== undefined) {
+			if (typeof value === 'object') {
+				// Handle object values (for x-* extensions)
+				for (const [k, v] of Object.entries(value)) {
+					code = code.replace(new RegExp(`\\{\\{value\\.${k}\\}\\}`, 'g'), String(v));
+				}
+			} else {
+				let strValue = String(value);
+				// If used in a RegExp string context, escape backslashes and quotes
+				if (code.includes('new RegExp(\'{{value}}\')')) {
+					strValue = escapeRegExpString(strValue);
+				}
+				code = code.replace(/\{\{value\}\}/g, strValue);
+			}
+		}
+
+		return { validator: mappingEntry.validator, code };
+	}
+
+	private checkNestedValidation(property: Property): void {
+		const schema = property.schema;
+		if (!isReferenceObject(schema)) {
+			// Check for inline objects with nested references
+			if ((schema as SchemaObject).type === 'array') {
+				// Don't generate validation for arrays
+				return;
+			}
+			return;
+		}
+
+		const refPath = schema.$ref;
+		const refName = refPath.split('/').pop()!;
+
+		// Check if the referenced model has a validation function
+		if (this.modelsWithValidation.has(refName)) {
+			const referencedModel = this.allModels.get(refName);
+			if (referencedModel) {
+				const config = this.getConfig();
+				const prefix = config.functionPrefix ?? 'apply';
+				const suffix = config.functionSuffix ?? 'Validation';
+
+				this.nestedValidations.push({
+					identifier: property.identifier,
+					functionName: `${prefix}${referencedModel.typeName}${suffix}`,
+					importPath: './' + fileName(refName) + '.validation',
+					importFile: fileName(refName) + '.validation',
+				});
+			}
+		}
+	}
+
+	/**
+	 * Returns the validation imports needed for this model
+	 */
+	getValidatorImports(): { nativeImports: string[]; customImports: { name: string; path: string }[] } {
+		const config = this.getConfig();
+		const importPath = config.importPath ?? '@angular/forms/signals';
+		const customImports = config.customImports ?? [];
+
+		const customValidatorNames = new Set(customImports.map((i) => i.name));
+		const nativeImports: string[] = [importPath];
+		const usedCustomImports: { name: string; path: string }[] = [];
+
+		for (const validator of this.usedValidators) {
+			if (customValidatorNames.has(validator)) {
+				const customImport = customImports.find((i) => i.name === validator)!;
+				usedCustomImports.push(customImport);
+			} else {
+				nativeImports.push(validator);
+			}
+		}
+
+		// Sort for consistent output
+		nativeImports.sort();
+		usedCustomImports.sort((a, b) => a.name.localeCompare(b.name));
+
+		return { nativeImports, customImports: usedCustomImports };
+	}
+}
+
+/**
+ * Determines if a model should have validation generated
+ */
+export function shouldGenerateValidation(model: Model, options: Options): boolean {
+	if (!model.isObject) {
+		return false;
+	}
+
+	const config = options.validation ?? {};
+	if (config.generateForInputDTOOnly) {
+		return model.typeName.endsWith('InputDTO');
+	}
+
+	return true;
+}

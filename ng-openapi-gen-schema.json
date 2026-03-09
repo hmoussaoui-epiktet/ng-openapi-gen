@@ -277,6 +277,85 @@
 			"description": "When true, removes '?' (optional) and '| null' from property types in generated interfaces. Useful for signal-based forms. Default is false.",
 			"type": "boolean",
 			"default": false
+		},
+		"validation": {
+			"description": "Configuration pour la génération des schémas de validation.",
+			"type": "object",
+			"properties": {
+				"enabled": {
+					"description": "Quand activé, génère des fonctions de validation Angular Signal Form pour chaque modèle. Désactivé par défaut.",
+					"type": "boolean",
+					"default": false
+				},
+				"outputDir": {
+					"description": "Répertoire de sortie pour les fichiers de validation. Par défaut 'validation'.",
+					"type": "string",
+					"default": "validation"
+				},
+				"importPath": {
+					"description": "Chemin d'import par défaut pour les validateurs natifs. Par défaut '@angular/forms/signals'.",
+					"type": "string",
+					"default": "@angular/forms/signals"
+				},
+				"customImports": {
+					"description": "Imports additionnels pour les validateurs personnalisés.",
+					"type": "array",
+					"items": {
+						"type": "object",
+						"required": ["name", "path"],
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Le nom de la fonction de validation"
+							},
+							"path": {
+								"type": "string",
+								"description": "Le chemin d'import pour ce validateur"
+							}
+						}
+					}
+				},
+				"mapping": {
+					"description": "Dictionnaire de mapping des contraintes OpenAPI vers les validateurs Signal Form.",
+					"type": "object",
+					"additionalProperties": {
+						"type": "object",
+						"required": ["validator", "template"],
+						"properties": {
+							"validator": {
+								"type": "string",
+								"description": "Le nom de la fonction de validation à importer"
+							},
+							"template": {
+								"type": "string",
+								"description": "Le template pour générer l'appel au validateur. Supporte les placeholders : {{path}}, {{value}}, {{property}}, {{type}}"
+							}
+						}
+					}
+				},
+				"disabled": {
+					"description": "Liste des clés de mapping à désactiver.",
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"generateForInputDTOOnly": {
+					"description": "Quand activé, génère les validations uniquement pour les modèles finissant par 'InputDTO'. Désactivé par défaut.",
+					"type": "boolean",
+					"default": false
+				},
+				"functionPrefix": {
+					"description": "Préfixe pour les fonctions de validation générées. Par défaut 'apply'.",
+					"type": "string",
+					"default": "apply"
+				},
+				"functionSuffix": {
+					"description": "Suffixe pour les fonctions de validation générées. Par défaut 'Validation'.",
+					"type": "string",
+					"default": "Validation"
+				}
+			}
 		}
 	}
 }

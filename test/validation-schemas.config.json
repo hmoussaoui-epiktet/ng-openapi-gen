@@ -1,0 +1,24 @@
+{
+	"$schema": "../ng-openapi-gen-schema.json",
+	"input": "validation-schemas.json",
+	"output": "out/validation-schemas",
+	"ignoreUnusedModels": false,
+	"validation": {
+		"enabled": true,
+		"importPath": "@angular/forms/signals",
+		"customImports": [
+			{ "name": "date", "path": "@common" },
+			{ "name": "phone", "path": "@common/validators" }
+		],
+		"mapping": {
+			"format:date": {
+				"validator": "date",
+				"template": "date({{path}})"
+			},
+			"format:date-time": {
+				"validator": "date",
+				"template": "date({{path}})"
+			}
+		}
+	}
+}
