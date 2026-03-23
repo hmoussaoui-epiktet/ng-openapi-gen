@@ -5,19 +5,17 @@
 	"ignoreUnusedModels": false,
 	"validation": {
 		"enabled": true,
-		"importPath": "@angular/forms/signals",
-		"customImports": [
-			{ "name": "date", "path": "@common" },
-			{ "name": "phone", "path": "@common/validators" }
-		],
+		"defaultImportPath": "@angular/forms/signals",
 		"mapping": {
 			"format:date": {
 				"validator": "date",
-				"template": "date({{path}})"
+				"template": "date({{path}})",
+				"importPath": "@common"
 			},
 			"format:date-time": {
 				"validator": "date",
-				"template": "date({{path}})"
+				"template": "date({{path}})",
+				"importPath": "@common"
 			}
 		}
 	}

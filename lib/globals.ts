@@ -23,6 +23,7 @@ export class Globals {
 	serviceIndexFile?: string;
 	defaultValueHelperFile?: string;
 	validationIndexFile?: string;
+	schemasHelperFile?: string;
 	rootUrl?: string;
 	promises: boolean;
 	generateServices: boolean;
@@ -69,6 +70,9 @@ export class Globals {
 		}
 		if (options.validation?.enabled) {
 			this.validationIndexFile = 'validation-schemas';
+			if (options.validation?.generateSchemasHelper) {
+				this.schemasHelperFile = 'schemas';
+			}
 		}
 		this.generateServices = !!options.services;
 	}

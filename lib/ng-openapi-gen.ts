@@ -149,15 +149,23 @@ export class NgOpenApiGen {
 				this.validationGenerator = new ValidationGenerator(this.openApi, this.options, this.models);
 				const validationModels = this.validationGenerator.getValidationModelsArray();
 				const validationDir = this.options.validation.outputDir ?? 'validation';
+				const validationMode = this.options.validation.mode ?? 'function';
+				const templateName = validationMode === 'schema' ? 'schemaValidation' : 'validation';
 
 				// Generate each validation file
 				for (const validationModel of validationModels) {
-					this.write('validation', validationModel, validationModel.validationFileName, validationDir);
+					this.write(templateName, validationModel, validationModel.validationFileName, validationDir);
 				}
 
 				// Generate validation index
 				if (validationModels.length > 0 && this.globals.validationIndexFile) {
-					this.write('validationIndex', { validationModels, validationDir }, this.globals.validationIndexFile);
+					this.write('validationIndex', { validationModels, validationDir, validationMode }, this.globals.validationIndexFile);
+				}
+
+				// Generate schemas helper (like Default for factories)
+				if (validationModels.length > 0 && this.globals.schemasHelperFile) {
+					const importPath = this.options.validation.defaultImportPath ?? '@angular/forms/signals';
+					this.write('schemasHelper', { validationModels, validationDir, importPath }, this.globals.schemasHelperFile);
 				}
 			}
 

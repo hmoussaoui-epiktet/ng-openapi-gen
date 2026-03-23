@@ -1,0 +1,24 @@
+{
+	"$schema": "../ng-openapi-gen-schema.json",
+	"input": "x-validators-schema.json",
+	"output": "out/x-validators-schema",
+	"ignoreUnusedModels": false,
+	"indexFile": true,
+	"validation": {
+		"enabled": true,
+		"mode": "schema",
+		"addSchemaSignalForm": true,
+		"generateSchemasHelper": true,
+		"mapping": {
+			"required": { "validator": "required", "template": "required({{path}})" },
+			"maxLength": { "validator": "maxLength", "template": "maxLength({{path}}, {{value}})" },
+			"minLength": { "validator": "minLength", "template": "minLength({{path}}, {{value}})" },
+			"phoneFr": { "validator": "phoneFr", "template": "phoneFr({{path}})", "importPath": "@common" },
+			"mobileFr": { "validator": "mobileFr", "template": "mobileFr({{path}})", "importPath": "@common" },
+			"zipCodeFr": { "validator": "zipCodeFr", "template": "zipCodeFr({{path}})", "importPath": "@common" },
+			"iban": { "validator": "iban", "template": "iban({{path}})", "importPath": "@common" },
+			"bic": { "validator": "bic", "template": "bic({{path}})", "importPath": "@common" },
+			"email": { "validator": "advancedEmail", "template": "advancedEmail({{path}})", "importPath": "@common" }
+		}
+	}
+}

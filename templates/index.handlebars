@@ -7,6 +7,9 @@ export type { {{responseClass}} } from './{{{responseFile}}}';
 {{#if defaultValueHelperFile}}
 	export { Default } from './{{{defaultValueHelperFile}}}';
 {{/if}}
+{{#if schemasHelperFile}}
+	export { Schemas } from './{{{schemasHelperFile}}}';
+{{/if}}
 {{#modelIndex.imports}}
 	export * from './models{{{file}}}';
 {{/modelIndex.imports}}

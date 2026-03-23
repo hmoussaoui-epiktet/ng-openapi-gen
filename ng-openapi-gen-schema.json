@@ -283,40 +283,28 @@
 			"type": "object",
 			"properties": {
 				"enabled": {
-					"description": "Quand activé, génère des fonctions de validation Angular Signal Form pour chaque modèle. Désactivé par défaut.",
+					"description": "Quand activé, génère des validations Angular Signal Form pour chaque modèle. Désactivé par défaut.",
 					"type": "boolean",
 					"default": false
+				},
+				"mode": {
+					"description": "Mode de génération:\n- 'function': génère `export function applyXxxValidation<T>(p: SchemaPath<T>): void { ... }`\n- 'schema': génère `export const xxxSchema = schema<Xxx>((rootPath) => { ... })`\nPar défaut 'function'.",
+					"type": "string",
+					"enum": ["function", "schema"],
+					"default": "function"
 				},
 				"outputDir": {
 					"description": "Répertoire de sortie pour les fichiers de validation. Par défaut 'validation'.",
 					"type": "string",
 					"default": "validation"
 				},
-				"importPath": {
-					"description": "Chemin d'import par défaut pour les validateurs natifs. Par défaut '@angular/forms/signals'.",
+				"defaultImportPath": {
+					"description": "Chemin d'import par défaut pour les validateurs sans importPath spécifique. Par défaut '@angular/forms/signals'.",
 					"type": "string",
 					"default": "@angular/forms/signals"
 				},
-				"customImports": {
-					"description": "Imports additionnels pour les validateurs personnalisés.",
-					"type": "array",
-					"items": {
-						"type": "object",
-						"required": ["name", "path"],
-						"properties": {
-							"name": {
-								"type": "string",
-								"description": "Le nom de la fonction de validation"
-							},
-							"path": {
-								"type": "string",
-								"description": "Le chemin d'import pour ce validateur"
-							}
-						}
-					}
-				},
 				"mapping": {
-					"description": "Dictionnaire de mapping des contraintes OpenAPI vers les validateurs Signal Form.",
+					"description": "Dictionnaire de mapping des validateurs x-validators vers les fonctions Signal Form. Chaque entrée peut avoir son propre importPath. Supporte les placeholders : {{path}}, {{value}}, {{property}}, {{type}}, {{min}}, {{max}}, {{pattern}}.\n\nExemple de mapping:\n```json\n{\n  \"required\": { \"validator\": \"required\", \"template\": \"required({{path}})\" },\n  \"maxLength\": { \"validator\": \"maxLength\", \"template\": \"maxLength({{path}}, {{value}})\" },\n  \"phoneFr\": { \"validator\": \"phoneFr\", \"template\": \"phoneFr({{path}})\", \"importPath\": \"@common/validators\" },\n  \"email\": { \"validator\": \"advancedEmail\", \"template\": \"advancedEmail({{path}})\", \"importPath\": \"@common/validators\" }\n}\n```",
 					"type": "object",
 					"additionalProperties": {
 						"type": "object",
@@ -329,6 +317,10 @@
 							"template": {
 								"type": "string",
 								"description": "Le template pour générer l'appel au validateur. Supporte les placeholders : {{path}}, {{value}}, {{property}}, {{type}}"
+							},
+							"importPath": {
+								"type": "string",
+								"description": "Le chemin d'import pour ce validateur. Si non spécifié, utilise defaultImportPath."
 							}
 						}
 					}
@@ -351,9 +343,29 @@
 					"default": "apply"
 				},
 				"functionSuffix": {
-					"description": "Suffixe pour les fonctions de validation générées. Par défaut 'Validation'.",
+					"description": "Suffixe pour les fonctions de validation générées (mode 'function'). Par défaut 'Validation'.",
 					"type": "string",
 					"default": "Validation"
+				},
+				"schemaSuffix": {
+					"description": "Suffixe pour les constantes de schéma générées (mode 'schema'). Par défaut 'ProfileSchema'.",
+					"type": "string",
+					"default": "ProfileSchema"
+				},
+				"addSchemaSignalForm": {
+					"description": "Quand activé, utilise l'extension x-validators du schéma OpenAPI (générée par C# ValidationSchemaFilter) au lieu des contraintes OpenAPI standard. Nécessite de configurer 'mapping' avec les validateurs correspondants. Désactivé par défaut.",
+					"type": "boolean",
+					"default": false
+				},
+				"xValidatorsKey": {
+					"description": "Le nom de la clé pour l'extension validators dans le schéma OpenAPI. Par défaut 'x-validators'.",
+					"type": "string",
+					"default": "x-validators"
+				},
+				"generateSchemasHelper": {
+					"description": "Quand activé, génère un objet helper Schemas (comme Default pour les factories) qui exporte tous les schémas de validation. Désactivé par défaut.",
+					"type": "boolean",
+					"default": false
 				}
 			}
 		}

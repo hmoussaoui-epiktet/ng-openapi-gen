@@ -8,6 +8,18 @@ import { Options } from './options';
 export class HandlebarsManager {
 	public instance: typeof Handlebars = Handlebars;
 
+	constructor() {
+		// Register built-in helpers
+		this.registerBuiltInHelpers();
+	}
+
+	private registerBuiltInHelpers(): void {
+		// Helper for comparing values
+		this.instance.registerHelper('ifEquals', function (this: unknown, arg1: unknown, arg2: unknown, options: Handlebars.HelperOptions) {
+			return arg1 === arg2 ? options.fn(this) : options.inverse(this);
+		});
+	}
+
 	public readCustomJsFile(options: Options): void {
 		const customDir = options.templates || '';
 
