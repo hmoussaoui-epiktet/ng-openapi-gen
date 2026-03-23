@@ -4,7 +4,7 @@
 import type { Schema } from '{{{importPath}}}';
 {{#validationModels}}
 import type { {{typeName}} } from './models/{{{modelFileName}}}';
-import { {{schemaName}} } from './{{{validationDir}}}/{{{validationFileName}}}';
+import { {{schemaName}} } from './{{../validationDir}}/{{{validationFileName}}}';
 {{/validationModels}}
 
 /**
