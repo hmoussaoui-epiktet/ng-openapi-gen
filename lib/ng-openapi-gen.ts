@@ -1,4 +1,5 @@
 import $RefParser from '@apidevtools/json-schema-ref-parser';
+import { execSync } from 'child_process';
 import eol from 'eol';
 
 // Import centralized OpenAPI types and utilities
@@ -172,6 +173,9 @@ export class NgOpenApiGen {
 			// Now synchronize the temp to the output folder
 			syncDirs(this.tempDir, this.outDir, this.options.removeStaleFiles !== false, this.logger);
 
+			// Run formatter if configured
+			this.runFormatter();
+
 			this.logger.info(`Generation from ${this.options.input} finished with ${models.length} models and ${services.length} services.`);
 		} finally {
 			// Always remove the temporary directory
@@ -186,6 +190,29 @@ export class NgOpenApiGen {
 
 		fs.ensureDirSync(dir);
 		fs.writeFileSync(file, ts, { encoding: 'utf-8' });
+	}
+
+	/**
+	 * Runs the configured formatter command on the output directory
+	 */
+	private runFormatter(): void {
+		if (!this.options.formatter) {
+			return;
+		}
+
+		// Replace {{output}} placeholder with the actual output directory
+		const command = this.options.formatter.replace(/\{\{output\}\}/g, this.outDir);
+
+		this.logger.info(`Running formatter: ${command}`);
+		try {
+			execSync(command, {
+				stdio: this.options.silent ? 'ignore' : 'inherit',
+				cwd: process.cwd(),
+			});
+			this.logger.info('Formatter completed successfully.');
+		} catch (error) {
+			this.logger.warn(`Formatter command failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	private initHandlebars() {

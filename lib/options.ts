@@ -160,6 +160,14 @@ export interface Options {
 
 	/** Configuration for validation schema generation. */
 	validation?: ValidationConfig;
+
+	/**
+	 * Command to run after generation to format the output files.
+	 * The command will be executed in the output directory.
+	 * Use {{output}} placeholder for the output directory path.
+	 * Examples: 'prettier --write {{output}}', 'eslint --fix {{output}}'
+	 */
+	formatter?: string;
 }
 
 /** Mapping entry for OpenAPI constraint to Signal Form validator */

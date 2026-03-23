@@ -368,6 +368,10 @@
 					"default": false
 				}
 			}
+		},
+		"formatter": {
+			"description": "Commande à exécuter après la génération pour formater les fichiers. Utiliser {{output}} comme placeholder pour le répertoire de sortie. Exemples: 'prettier --write {{output}}', 'eslint --fix {{output}}'.",
+			"type": "string"
 		}
 	}
 }
