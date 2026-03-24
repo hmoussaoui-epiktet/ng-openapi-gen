@@ -22,8 +22,9 @@ export { {{baseServiceClass}} } from './{{{baseServiceFile}}}';
 {{#services}}
 export { {{typeName}} } from './services/{{{fileName}}}';
 {{/services}}
-{{/if}}
+{{else}}
 {{#functions}}
 export type { {{paramsType}} } from './{{{importPath}}}/{{{importFile}}}';
 export { {{methodName}} } from './{{{importPath}}}/{{{importFile}}}';
 {{/functions}}
+{{/if}}
