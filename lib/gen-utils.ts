@@ -302,17 +302,27 @@ function rawTsType(schema: SchemaObject, options: Options, openApi: OpenAPIObjec
 			const uniqueTypes = [...new Set(unionTypes)];
 
 			if (uniqueTypes.length === 1) {
-				return hasNull ? `(${uniqueTypes[0]} | null)` : uniqueTypes[0];
+				// Single type, only add parentheses if type contains spaces/pipes and has null
+				const singleType = uniqueTypes[0];
+				if (hasNull) {
+					return singleType.includes(' ') ? `(${singleType}) | null` : `${singleType} | null`;
+				}
+				return singleType;
 			}
 
 			const unionType = uniqueTypes.join(' | ');
-			return hasNull ? `(${unionType} | null)` : `(${unionType})`;
+			// Multiple types need parentheses if combined with null
+			return hasNull ? `(${unionType}) | null` : unionType;
 		} else if (nonNullTypes.length === 1) {
 			// Single non-null type, process normally
 			const singleType = nonNullTypes[0];
 			const singleTypeSchema = { ...schema, type: singleType as any };
 			const result = rawTsType(singleTypeSchema, options, openApi, container);
-			return hasNull ? `(${result} | null)` : result;
+			// Only add parentheses if result contains spaces/pipes (complex type)
+			if (hasNull) {
+				return result.includes(' ') ? `(${result}) | null` : `${result} | null`;
+			}
+			return result;
 		} else if (hasNull) {
 			// Only null type
 			return 'null';
