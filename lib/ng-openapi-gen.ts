@@ -34,8 +34,10 @@ export class NgOpenApiGen {
 	outDir: string;
 	logger: Logger;
 	tempDir: string;
+	originalPaths?: PathsObject;
 
-	constructor(public openApi: OpenAPIObject, public options: Options) {
+	constructor(public openApi: OpenAPIObject, public options: Options, originalPaths?: PathsObject) {
+		this.originalPaths = originalPaths;
 		this.logger = new Logger(options.silent);
 		this.setDefaults();
 
@@ -387,9 +389,10 @@ export class NgOpenApiGen {
 	private removeExcludedOperationModels() {
 		// Collect all models referenced in the original paths (before any filtering)
 		const modelsInPaths = new Set<string>();
-		if (this.openApi.paths) {
-			for (const pathKey of Object.keys(this.openApi.paths)) {
-				const pathItem = this.openApi.paths[pathKey];
+		const pathsToScan = this.originalPaths ?? this.openApi.paths;
+		if (pathsToScan) {
+			for (const pathKey of Object.keys(pathsToScan)) {
+				const pathItem = pathsToScan[pathKey];
 				if (!pathItem) continue;
 				this.collectModelsFromPathItem(pathItem, modelsInPaths);
 			}
@@ -703,9 +706,10 @@ export async function runNgOpenApiGen() {
 		})) as OpenAPIObject;
 
 		const { excludeTags = [], excludePaths = [], includeTags = [] } = options;
+		const originalPaths = JSON.parse(JSON.stringify(openApi.paths ?? {}));
 		openApi.paths = filterPaths(openApi.paths ?? {}, excludeTags, excludePaths, includeTags);
 
-		const gen = new NgOpenApiGen(openApi, options);
+		const gen = new NgOpenApiGen(openApi, options, originalPaths);
 
 		gen.generate();
 	} catch (err) {
