@@ -13,7 +13,7 @@ import { HandlebarsManager } from './handlebars-manager';
 import { Logger } from './logger';
 import { Model } from './model';
 import { ModelIndex } from './model-index';
-import { OpenAPIObject, OperationObject, PathItemObject, PathsObject, ReferenceObject, SchemaObject } from './openapi-typings';
+import { ArraySchemaObject, MediaTypeObject, OpenAPIObject, OperationObject, PathItemObject, PathsObject, ReferenceObject, SchemaObject } from './openapi-typings';
 import { Operation } from './operation';
 import { Options } from './options';
 import { Service } from './service';
@@ -55,7 +55,11 @@ export class NgOpenApiGen {
 		this.readModels();
 		this.readServices();
 
-		// Ignore the unused models if not set to false in options
+		// Always remove models that are only used by excluded operations
+		// This is different from ignoreUnusedModels which removes ALL unused models
+		this.removeExcludedOperationModels();
+
+		// Additionally ignore all unused models if option is enabled
 		if (this.options.ignoreUnusedModels !== false) {
 			this.ignoreUnusedModels();
 		}
@@ -290,6 +294,8 @@ export class NgOpenApiGen {
 
 	private readServices() {
 		const defaultTag = this.options.defaultTag || 'Api';
+		const includeTags = this.options.includeTags || [];
+		const excludeTags = this.options.excludeTags || [];
 
 		// First read all operations, as tags are by operation
 		const operationsByTag = new Map<string, Operation[]>();
@@ -326,6 +332,19 @@ export class NgOpenApiGen {
 							this.logger.warn(`No tags set on operation '${opPath}.${method}'. Assuming '${defaultTag}'.`);
 							operation.tags.push(defaultTag);
 						}
+
+						// Skip operations that have ANY excluded tag
+						if (excludeTags.length > 0 && operation.tags.some((tag) => excludeTags.includes(tag))) {
+							this.logger.info(`Ignoring operation '${id}' because it has an excluded tag`);
+							continue;
+						}
+
+						// Skip operations that don't have ANY included tag (when includeTags is specified)
+						if (includeTags.length > 0 && !operation.tags.some((tag) => includeTags.includes(tag))) {
+							this.logger.info(`Ignoring operation '${id}' because it has no included tag`);
+							continue;
+						}
+
 						for (const tag of operation.tags) {
 							let operations = operationsByTag.get(tag);
 							if (!operations) {
@@ -341,9 +360,7 @@ export class NgOpenApiGen {
 				}
 			}
 
-			// Then create a service per operation, as long as the tag is included
-			const includeTags = this.options.includeTags || [];
-			const excludeTags = this.options.excludeTags || [];
+			// Then create a service per tag, as long as the tag is included
 			const tags = this.openApi.tags || [];
 			for (const tagName of operationsByTag.keys()) {
 				if (includeTags.length > 0 && !includeTags.includes(tagName)) {
@@ -362,8 +379,157 @@ export class NgOpenApiGen {
 		}
 	}
 
-	private ignoreUnusedModels() {
-		// First, collect all type names used by services
+	/**
+	 * Removes models that are ONLY used by excluded operations.
+	 * This always runs, regardless of ignoreUnusedModels option.
+	 * Models that are not referenced by any operation (orphan models) are kept.
+	 */
+	private removeExcludedOperationModels() {
+		// Collect all models referenced in the original paths (before any filtering)
+		const modelsInPaths = new Set<string>();
+		if (this.openApi.paths) {
+			for (const pathKey of Object.keys(this.openApi.paths)) {
+				const pathItem = this.openApi.paths[pathKey];
+				if (!pathItem) continue;
+				this.collectModelsFromPathItem(pathItem, modelsInPaths);
+			}
+		}
+
+		// Collect all models used by included services
+		const usedByServices = this.collectModelsUsedByServices();
+
+		// Remove models that:
+		// 1. Are referenced in some path (not orphan)
+		// 2. But are NOT used by any included service (used by excluded operations)
+		for (const model of this.models.values()) {
+			const isReferencedInPaths = modelsInPaths.has(model.name);
+			const isUsedByServices = usedByServices.has(model.name);
+
+			if (isReferencedInPaths && !isUsedByServices) {
+				this.logger.debug(`Removing model ${model.name} because it is only used by excluded operations`);
+				this.models.delete(model.name);
+			}
+		}
+	}
+
+	/**
+	 * Collects all model names referenced in a path item
+	 */
+	private collectModelsFromPathItem(pathItem: PathItemObject, models: Set<string>) {
+		const methods = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const;
+		for (const method of methods) {
+			const operation = (pathItem as any)[method] as OperationObject | undefined;
+			if (!operation) continue;
+
+			// Check parameters
+			if (operation.parameters) {
+				for (const param of operation.parameters) {
+					if ('$ref' in param) {
+						models.add(simpleName(param.$ref));
+					} else if (param.schema) {
+						this.collectModelsFromSchema(param.schema, models);
+					}
+				}
+			}
+
+			// Check request body
+			if (operation.requestBody) {
+				if ('$ref' in operation.requestBody) {
+					models.add(simpleName(operation.requestBody.$ref));
+				} else if (operation.requestBody.content) {
+					for (const content of Object.values(operation.requestBody.content)) {
+						if (content.schema) {
+							this.collectModelsFromSchema(content.schema, models);
+						}
+					}
+				}
+			}
+
+			// Check responses
+			if (operation.responses) {
+				for (const response of Object.values(operation.responses)) {
+					if (!response) continue;
+					if ('$ref' in response) {
+						models.add(simpleName(response.$ref));
+					} else if (response.content) {
+						for (const content of Object.values(response.content) as MediaTypeObject[]) {
+							if (content.schema) {
+								this.collectModelsFromSchema(content.schema, models);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Recursively collects model names from a schema
+	 */
+	private collectModelsFromSchema(schema: SchemaObject | ReferenceObject, models: Set<string>) {
+		if ('$ref' in schema) {
+			const name = simpleName(schema.$ref);
+			if (!models.has(name)) {
+				models.add(name);
+				// Also collect dependencies from the referenced model
+				const referencedModel = this.models.get(name);
+				if (referencedModel) {
+					this.allReferencedNames(referencedModel.schema).forEach((n) => {
+						if (!models.has(n)) {
+							models.add(n);
+							this.collectDependenciesForExcluded(n, models);
+						}
+					});
+				}
+			}
+			return;
+		}
+
+		// Handle array items
+		if ('items' in schema && (schema as ArraySchemaObject).items) {
+			this.collectModelsFromSchema((schema as ArraySchemaObject).items, models);
+		}
+
+		// Handle object properties
+		if (schema.properties) {
+			for (const prop of Object.values(schema.properties)) {
+				this.collectModelsFromSchema(prop, models);
+			}
+		}
+
+		// Handle allOf, oneOf, anyOf
+		for (const key of ['allOf', 'oneOf', 'anyOf'] as const) {
+			if (schema[key]) {
+				for (const subSchema of schema[key]) {
+					this.collectModelsFromSchema(subSchema, models);
+				}
+			}
+		}
+
+		// Handle additionalProperties
+		if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
+			this.collectModelsFromSchema(schema.additionalProperties, models);
+		}
+	}
+
+	/**
+	 * Collects dependencies for excluded models check
+	 */
+	private collectDependenciesForExcluded(name: string, models: Set<string>) {
+		const model = this.models.get(name);
+		if (!model) return;
+		this.allReferencedNames(model.schema).forEach((n) => {
+			if (!models.has(n)) {
+				models.add(n);
+				this.collectDependenciesForExcluded(n, models);
+			}
+		});
+	}
+
+	/**
+	 * Collects all models used by the current services (with dependencies)
+	 */
+	private collectModelsUsedByServices(): Set<string> {
 		const usedNames = new Set<string>();
 		for (const service of this.services.values()) {
 			for (const imp of service.imports) {
@@ -389,6 +555,12 @@ export class NgOpenApiGen {
 		const referencedModels = Array.from(usedNames);
 		usedNames.clear();
 		referencedModels.forEach((name) => this.collectDependencies(name, usedNames));
+
+		return usedNames;
+	}
+
+	private ignoreUnusedModels() {
+		const usedNames = this.collectModelsUsedByServices();
 
 		// Then delete all unused models
 		for (const model of this.models.values()) {
@@ -550,10 +722,29 @@ export function filterPaths(
 ) {
 	paths = JSON.parse(JSON.stringify(paths));
 	const filteredPaths: PathsObject = {};
+
+	/**
+	 * Check if a path matches any of the exclude patterns
+	 * Supports exact match and glob-like patterns with * wildcard
+	 */
+	const isPathExcluded = (pathKey: string): boolean => {
+		if (!excludePaths || excludePaths.length === 0) return false;
+		return excludePaths.some((pattern) => {
+			if (pattern.includes('*')) {
+				// Convert glob pattern to regex: /admin/* -> ^/admin/.*$
+				const regexPattern = pattern
+					.replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape special regex chars except *
+					.replace(/\*/g, '.*'); // Convert * to .*
+				return new RegExp(`^${regexPattern}$`).test(pathKey);
+			}
+			return pattern === pathKey;
+		});
+	};
+
 	for (const key in paths) {
 		if (!paths.hasOwnProperty(key)) continue;
 
-		if (excludePaths?.includes(key)) {
+		if (isPathExcluded(key)) {
 			console.log(`Path ${key} is excluded by excludePaths`);
 			continue;
 		}

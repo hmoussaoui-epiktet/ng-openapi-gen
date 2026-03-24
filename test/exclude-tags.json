@@ -1,0 +1,279 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Test exclude tags",
+		"version": "1.0"
+	},
+	"servers": [
+		{
+			"url": "/api"
+		}
+	],
+	"tags": [
+		{
+			"name": "Users",
+			"description": "User operations"
+		},
+		{
+			"name": "Admin",
+			"description": "Admin operations - should be excluded"
+		},
+		{
+			"name": "Public",
+			"description": "Public operations"
+		}
+	],
+	"paths": {
+		"/users": {
+			"get": {
+				"operationId": "getUsers",
+				"tags": ["Users"],
+				"summary": "Get all users",
+				"responses": {
+					"200": {
+						"description": "List of users",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/User"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/users/{id}": {
+			"get": {
+				"operationId": "getUserById",
+				"tags": ["Users"],
+				"summary": "Get user by ID",
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "User details",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/UserDetails"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/settings": {
+			"get": {
+				"operationId": "getAdminSettings",
+				"tags": ["Admin"],
+				"summary": "Get admin settings - should be excluded",
+				"responses": {
+					"200": {
+						"description": "Admin settings",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminSettings"
+								}
+							}
+						}
+					}
+				}
+			},
+			"put": {
+				"operationId": "updateAdminSettings",
+				"tags": ["Admin"],
+				"summary": "Update admin settings - should be excluded",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/AdminSettingsUpdate"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Updated settings",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/AdminSettings"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/admin/users": {
+			"get": {
+				"operationId": "getAdminUsers",
+				"tags": ["Admin"],
+				"summary": "Get admin users view - should be excluded",
+				"responses": {
+					"200": {
+						"description": "Admin user list",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"$ref": "#/components/schemas/AdminUserView"
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/public/info": {
+			"get": {
+				"operationId": "getPublicInfo",
+				"tags": ["Public"],
+				"summary": "Get public info",
+				"responses": {
+					"200": {
+						"description": "Public info",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PublicInfo"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"User": {
+				"type": "object",
+				"description": "Basic user model - used by Users tag",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"UserDetails": {
+				"type": "object",
+				"description": "User details - used by Users tag",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"email": {
+						"type": "string"
+					},
+					"createdAt": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"AdminSettings": {
+				"type": "object",
+				"description": "Admin settings - ONLY used by Admin tag, should be excluded",
+				"properties": {
+					"maintenanceMode": {
+						"type": "boolean"
+					},
+					"maxUsers": {
+						"type": "integer"
+					},
+					"adminConfig": {
+						"$ref": "#/components/schemas/AdminConfig"
+					}
+				}
+			},
+			"AdminSettingsUpdate": {
+				"type": "object",
+				"description": "Admin settings update - ONLY used by Admin tag, should be excluded",
+				"properties": {
+					"maintenanceMode": {
+						"type": "boolean"
+					},
+					"maxUsers": {
+						"type": "integer"
+					}
+				}
+			},
+			"AdminConfig": {
+				"type": "object",
+				"description": "Admin config - ONLY referenced by AdminSettings, should be excluded",
+				"properties": {
+					"secretKey": {
+						"type": "string"
+					},
+					"debugMode": {
+						"type": "boolean"
+					}
+				}
+			},
+			"AdminUserView": {
+				"type": "object",
+				"description": "Admin user view - ONLY used by Admin tag, should be excluded",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					},
+					"role": {
+						"type": "string"
+					},
+					"lastLogin": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"PublicInfo": {
+				"type": "object",
+				"description": "Public info - used by Public tag",
+				"properties": {
+					"version": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"SharedModel": {
+				"type": "object",
+				"description": "Shared model - not used by any operation, should be excluded with ignoreUnusedModels",
+				"properties": {
+					"data": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"$schema": "../ng-openapi-gen-schema.json",
+	"input": "exclude-tags.json",
+	"output": "out/exclude-tags",
+	"excludeTags": ["Admin"],
+	"ignoreUnusedModels": false
+}
