@@ -33,9 +33,24 @@ export function isReferenceObject(obj: any): obj is ReferenceObject {
 
 /**
  * Type guard to check if a schema is an ArraySchemaObject
+ * Handles both OpenAPI 3.0 (type: "array") and 3.1 (type: ["array"] or ["null", "array"])
  */
 export function isArraySchemaObject(obj: SchemaObject): obj is ArraySchemaObject {
-	return 'type' in obj && obj.type === 'array' && 'items' in obj;
+	if (!('items' in obj)) {
+		return false;
+	}
+	if (!('type' in obj)) {
+		return false;
+	}
+	// OpenAPI 3.0: type is "array"
+	if (obj.type === 'array') {
+		return true;
+	}
+	// OpenAPI 3.1: type is an array containing "array"
+	if (Array.isArray(obj.type) && obj.type.includes('array' as any)) {
+		return true;
+	}
+	return false;
 }
 
 /**
