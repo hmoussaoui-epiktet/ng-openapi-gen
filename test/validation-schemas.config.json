@@ -3,6 +3,7 @@
 	"input": "validation-schemas.json",
 	"output": "out/validation-schemas",
 	"ignoreUnusedModels": false,
+	"apiService": false,
 	"validation": {
 		"enabled": true,
 		"defaultImportPath": "@angular/forms/signals",
