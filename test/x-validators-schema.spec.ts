@@ -50,7 +50,7 @@ describe('Generation tests using x-validators with schema mode', () => {
 			const validationModel = gen.validationGenerator?.validationModels.get('NumeroTelephoneInputDTO');
 			const telephoneValidations = validationModel?.propertyValidations.find((p) => p.name === 'telephone');
 			const phoneFrValidation = telephoneValidations?.validations.find((v) => v.validator === 'phoneFr');
-			expect(phoneFrValidation?.code).toBe('phoneFr(rootPath.telephone, { message: \'Format de téléphone invalide\' })');
+			expect(phoneFrValidation?.code).toBe('phoneFr(rootPath.telephone, { message: `Format de téléphone invalide` })');
 		});
 
 		it('should have correct custom imports', () => {
@@ -121,12 +121,12 @@ describe('Generation tests using x-validators with schema mode', () => {
 			expect(bicValidations?.validations.some((v) => v.code === 'bic(rootPath.bic)')).toBe(true);
 		});
 
-		it('should replace unresolved message placeholder with empty string', () => {
+		it('should replace unresolved message placeholder with null', () => {
 			const validationModel = gen.validationGenerator?.validationModels.get('ContactInputDTO');
 			const mobileValidations = validationModel?.propertyValidations.find((p) => p.name === 'mobile');
 			const mobileFrValidation = mobileValidations?.validations.find((v) => v.validator === 'mobileFr');
-			// mobileFr in JSON has no message, so {{message}} should be replaced with empty string
-			expect(mobileFrValidation?.code).toBe('mobileFr(rootPath.mobile, { message: \'\' })');
+			// mobileFr in JSON has no message, so {{message}} should be replaced with null
+			expect(mobileFrValidation?.code).toBe('mobileFr(rootPath.mobile, { message: null })');
 		});
 
 		it('should have nested validation for adresse with correct schemaName', () => {

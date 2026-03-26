@@ -14,11 +14,11 @@ function escapeRegExpString(str: string): string {
 }
 
 /**
- * Escapes a string for use inside a JavaScript single-quoted string literal
- * Escapes backslashes, single quotes, and newlines
+ * Escapes a string for use inside a JavaScript template literal (backticks)
+ * Escapes backslashes, backticks, and ${} interpolations
  */
-function escapeJsString(str: string): string {
-	return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+function escapeTemplateLiteral(str: string): string {
+	return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$');
 }
 
 /** Default mapping from OpenAPI constraints to Signal Form validators */
@@ -299,9 +299,9 @@ export class ValidationModel {
 				if (code.includes(`new RegExp('{{${key}}}')`)) {
 					strValue = escapeRegExpString(strValue);
 				}
-				// For message, escape as JS string since it will be quoted
+				// For message, wrap in backticks and escape as template literal
 				if (key === 'message') {
-					strValue = escapeJsString(strValue);
+					strValue = `\`${escapeTemplateLiteral(strValue)}\``;
 				}
 				code = code.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), strValue);
 			}
@@ -312,7 +312,10 @@ export class ValidationModel {
 			code = code.replace(/\{\{value\}\}/g, String(validator.value));
 		}
 
-		// Remove any unresolved placeholders (e.g., {{message}} when message is not provided)
+		// Replace {{message}} with null if not provided (for optional message parameter)
+		code = code.replace(/\{\{message\}\}/g, 'null');
+
+		// Remove any other unresolved placeholders
 		code = code.replace(/\{\{[^}]+\}\}/g, '');
 
 		return { validator: mappingEntry.validator, code };
