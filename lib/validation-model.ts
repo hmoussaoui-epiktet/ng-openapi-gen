@@ -312,6 +312,9 @@ export class ValidationModel {
 			code = code.replace(/\{\{value\}\}/g, String(validator.value));
 		}
 
+		// Remove any unresolved placeholders (e.g., {{message}} when message is not provided)
+		code = code.replace(/\{\{[^}]+\}\}/g, '');
+
 		return { validator: mappingEntry.validator, code };
 	}
 

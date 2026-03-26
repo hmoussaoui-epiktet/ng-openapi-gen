@@ -121,6 +121,14 @@ describe('Generation tests using x-validators with schema mode', () => {
 			expect(bicValidations?.validations.some((v) => v.code === 'bic(rootPath.bic)')).toBe(true);
 		});
 
+		it('should replace unresolved message placeholder with empty string', () => {
+			const validationModel = gen.validationGenerator?.validationModels.get('ContactInputDTO');
+			const mobileValidations = validationModel?.propertyValidations.find((p) => p.name === 'mobile');
+			const mobileFrValidation = mobileValidations?.validations.find((v) => v.validator === 'mobileFr');
+			// mobileFr in JSON has no message, so {{message}} should be replaced with empty string
+			expect(mobileFrValidation?.code).toBe('mobileFr(rootPath.mobile, { message: \'\' })');
+		});
+
 		it('should have nested validation for adresse with correct schemaName', () => {
 			const validationModel = gen.validationGenerator?.validationModels.get('ContactInputDTO');
 			const nestedAdresse = validationModel?.nestedValidations.find((n) => n.identifier === 'adresse');
