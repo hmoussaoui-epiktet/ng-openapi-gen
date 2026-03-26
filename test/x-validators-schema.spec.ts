@@ -44,7 +44,13 @@ describe('Generation tests using x-validators with schema mode', () => {
 			const validationModel = gen.validationGenerator?.validationModels.get('NumeroTelephoneInputDTO');
 			const telephoneValidations = validationModel?.propertyValidations.find((p) => p.name === 'telephone');
 			expect(telephoneValidations?.validations.some((v) => v.validator === 'phoneFr')).toBe(true);
-			expect(telephoneValidations?.validations.some((v) => v.code === 'phoneFr(rootPath.telephone)')).toBe(true);
+		});
+
+		it('should include custom message in phoneFr validator', () => {
+			const validationModel = gen.validationGenerator?.validationModels.get('NumeroTelephoneInputDTO');
+			const telephoneValidations = validationModel?.propertyValidations.find((p) => p.name === 'telephone');
+			const phoneFrValidation = telephoneValidations?.validations.find((v) => v.validator === 'phoneFr');
+			expect(phoneFrValidation?.code).toBe('phoneFr(rootPath.telephone, { message: \'Format de téléphone invalide\' })');
 		});
 
 		it('should have correct custom imports', () => {

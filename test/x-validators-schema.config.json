@@ -13,7 +13,7 @@
 			"required": { "validator": "required", "template": "required({{path}})" },
 			"maxLength": { "validator": "maxLength", "template": "maxLength({{path}}, {{value}})" },
 			"minLength": { "validator": "minLength", "template": "minLength({{path}}, {{value}})" },
-			"phoneFr": { "validator": "phoneFr", "template": "phoneFr({{path}})", "importPath": "@common" },
+			"phoneFr": { "validator": "phoneFr", "template": "phoneFr({{path}}, { message: '{{message}}' })", "importPath": "@common" },
 			"mobileFr": { "validator": "mobileFr", "template": "mobileFr({{path}})", "importPath": "@common" },
 			"zipCodeFr": { "validator": "zipCodeFr", "template": "zipCodeFr({{path}})", "importPath": "@common" },
 			"iban": { "validator": "iban", "template": "iban({{path}})", "importPath": "@common" },

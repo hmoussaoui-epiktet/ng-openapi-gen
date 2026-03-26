@@ -13,6 +13,14 @@ function escapeRegExpString(str: string): string {
 	return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
 }
 
+/**
+ * Escapes a string for use inside a JavaScript single-quoted string literal
+ * Escapes backslashes, single quotes, and newlines
+ */
+function escapeJsString(str: string): string {
+	return str.replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+}
+
 /** Default mapping from OpenAPI constraints to Signal Form validators */
 export const DEFAULT_VALIDATION_MAPPING: Record<string, ValidatorMappingEntry> = {
 	required: { validator: 'required', template: 'required({{path}})' },
@@ -283,13 +291,17 @@ export class ValidationModel {
 		code = code.replace(/\{\{property\}\}/g, property.name);
 		code = code.replace(/\{\{type\}\}/g, property.type);
 
-		// Replace all validator properties (value, min, max, pattern, etc.)
+		// Replace all validator properties (value, min, max, pattern, message, etc.)
 		for (const [key, value] of Object.entries(validator)) {
-			if (key !== 'name' && key !== 'message') {
+			if (key !== 'name') {
 				let strValue = String(value);
 				// If used in a RegExp string context, escape backslashes and quotes
 				if (code.includes(`new RegExp('{{${key}}}')`)) {
 					strValue = escapeRegExpString(strValue);
+				}
+				// For message, escape as JS string since it will be quoted
+				if (key === 'message') {
+					strValue = escapeJsString(strValue);
 				}
 				code = code.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), strValue);
 			}
