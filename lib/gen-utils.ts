@@ -621,12 +621,59 @@ function tryGetDiscriminatorValue(baseSchema: SchemaObject, derivedSchema: Schem
 }
 
 /**
+ * Formats a default value from OpenAPI schema to TypeScript literal
+ */
+function formatDefaultValue(value: unknown, schemaType: string | string[] | undefined): string {
+	if (value === null || value === undefined) {
+		return 'null';
+	}
+
+	const mainType = Array.isArray(schemaType) ? schemaType[0] : schemaType;
+
+	switch (mainType) {
+		case 'string':
+			return `'${String(value).replace(/'/g, '\\\'')}'`;
+		case 'number':
+		case 'integer':
+			return String(value);
+		case 'boolean':
+			return value ? 'true' : 'false';
+		case 'array':
+			return JSON.stringify(value);
+		case 'object':
+			return JSON.stringify(value);
+		default:
+			// Infer type from value
+			if (typeof value === 'string') {
+				return `'${value.replace(/'/g, '\\\'')}'`;
+			}
+			if (typeof value === 'number') {
+				return String(value);
+			}
+			if (typeof value === 'boolean') {
+				return value ? 'true' : 'false';
+			}
+			if (Array.isArray(value) || typeof value === 'object') {
+				return JSON.stringify(value);
+			}
+			return String(value);
+	}
+}
+
+/**
  * Returns the default value for a property based on its schema
  */
 export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, options: Options, openApi: OpenAPIObject, container?: Model): string {
 	// Resolve reference
 	if (isReferenceObject(schema)) {
 		const resolved = resolveRef(openApi, schema.$ref) as SchemaObject;
+
+		// Priority: use OpenAPI default value if defined
+		if (resolved && resolved.default !== undefined) {
+			const resolvedType = getSchemaType(resolved);
+			return formatDefaultValue(resolved.default, resolvedType);
+		}
+
 		// If the reference is an enum, return first enum value
 		if (resolved && resolved.enum && resolved.enum.length > 0) {
 			const enumType = getSchemaType(resolved);
@@ -645,6 +692,11 @@ export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, op
 
 	const schemaObj = schema as SchemaObject;
 	const type = getSchemaType(schemaObj);
+
+	// Priority: use OpenAPI default value if defined
+	if (schemaObj.default !== undefined) {
+		return formatDefaultValue(schemaObj.default, type);
+	}
 
 	// Handle nullable types (unless strictPropertyTypes is enabled)
 	if (!options.strictPropertyTypes && isNullable(schemaObj)) {

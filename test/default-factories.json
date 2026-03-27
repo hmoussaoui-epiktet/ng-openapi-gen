@@ -110,6 +110,35 @@
 						"nullable": true
 					}
 				}
+			},
+			"WithDefaults": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string",
+						"default": "John Doe"
+					},
+					"age": {
+						"type": "integer",
+						"default": 25
+					},
+					"score": {
+						"type": "number",
+						"default": 99.5
+					},
+					"isVerified": {
+						"type": "boolean",
+						"default": true
+					},
+					"tags": {
+						"type": "array",
+						"items": { "type": "string" },
+						"default": ["tag1", "tag2"]
+					},
+					"noDefault": {
+						"type": "string"
+					}
+				}
 			}
 		}
 	}
