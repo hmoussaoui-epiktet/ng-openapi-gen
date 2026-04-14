@@ -740,8 +740,31 @@ export function defaultValueForSchema(schema: SchemaObject | ReferenceObject, op
 		case 'object':
 			return '{}';
 		default:
-			// For unions, anyOf, oneOf, allOf - return empty object
-			if (schemaObj.anyOf || schemaObj.oneOf || schemaObj.allOf) {
+			// For unions (anyOf, oneOf), check if nullable and handle non-null member
+			if (schemaObj.anyOf || schemaObj.oneOf) {
+				const unionMembers = schemaObj.anyOf || schemaObj.oneOf || [];
+				const nullMember = unionMembers.find((m: SchemaObject | ReferenceObject) =>
+					!isReferenceObject(m) && (m as SchemaObject).type === 'null'
+				);
+				const nonNullMembers = unionMembers.filter((m: SchemaObject | ReferenceObject) =>
+					isReferenceObject(m) || (m as SchemaObject).type !== 'null'
+				);
+
+				// If it's a nullable union (has null type member), return null
+				if (nullMember) {
+					return 'null';
+				}
+
+				// If there's exactly one non-null member, use its default value
+				if (nonNullMembers.length === 1) {
+					return defaultValueForSchema(nonNullMembers[0], options, openApi, container);
+				}
+
+				// Multiple non-null members - return empty object as fallback
+				return '{}';
+			}
+			// For allOf - return empty object
+			if (schemaObj.allOf) {
 				return '{}';
 			}
 			return 'null';

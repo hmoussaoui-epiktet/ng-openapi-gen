@@ -139,6 +139,24 @@
 						"type": "string"
 					}
 				}
+			},
+			"CodeJustificatifDiplome": {
+				"type": "integer",
+				"enum": [1, 2, 3, 4]
+			},
+			"CandidatDTO": {
+				"type": "object",
+				"properties": {
+					"codeJustificatifDiplome": {
+						"oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/CodeJustificatifDiplome" }]
+					},
+					"requiredEnumField": {
+						"$ref": "#/components/schemas/CodeJustificatifDiplome"
+					},
+					"nullableString": {
+						"oneOf": [{ "type": "null" }, { "type": "string" }]
+					}
+				}
 			}
 		}
 	}
